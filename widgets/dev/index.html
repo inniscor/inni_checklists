@@ -41,8 +41,14 @@
   /* Search + filter pills */
   #q { width: 100%; padding: 9px 11px; border: 1px solid var(--line); border-radius: var(--radius-s); background: var(--surface); font-size: 16px; }
   .fgroup { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 8px; align-items: start; margin-top: 8px; }
-    .pills { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: thin; }
-  @media (min-width: 720px) { .pills { flex-wrap: wrap; overflow: visible; } }
+  .pills { display: flex; flex-wrap: wrap; gap: 6px; }
+  .fgroup .flabel { font-family: var(--cond); font-weight: 600; font-size: 15px; color: var(--muted); padding-top: 4px; }
+  .fpanel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-m); padding: 2px 12px 12px; margin-top: 8px; }
+  .fbtn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 4px 12px; font-size: 14px; cursor: pointer; }
+  .fbtn[aria-expanded="true"] { border-color: var(--ink); }
+  .fbtn b { font-weight: 600; }
+  .fbtn .chev { font-size: 10px; color: var(--muted); transition: transform .15s; }
+  .fbtn[aria-expanded="true"] .chev { transform: rotate(180deg); }
   .toggle { flex: none; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 4px 11px; font-size: 14px; cursor: pointer; white-space: nowrap; }
   .toggle[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: #fff; }
   .row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px; }
@@ -58,9 +64,13 @@
   .btn { border: 1px solid var(--ink); background: var(--surface); border-radius: var(--radius-s); padding: 6px 12px; font-weight: 600; cursor: pointer; white-space: nowrap; }
   .btn:hover { background: var(--ink); color: #fff; }
 
-  /* Player suggestions */
-  .suggest { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
-  .suggest button { border: 1px dashed var(--muted); background: transparent; border-radius: 999px; padding: 3px 10px; font-size: 14px; cursor: pointer; }
+  /* Search with player suggestions dropdown */
+  .search { position: relative; }
+  .suggest { position: absolute; z-index: 6; left: 0; right: 0; top: calc(100% + 4px); margin: 0; padding: 4px; list-style: none; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-s); box-shadow: 0 6px 18px rgba(20, 33, 46, .12); }
+  .suggest .shead { padding: 4px 8px 2px; font-size: 12px; color: var(--muted); }
+  .suggest li[role="option"] { padding: 7px 8px; border-radius: 4px; cursor: pointer; font-size: 15px; }
+  .suggest li[role="option"] small { color: var(--muted); margin-left: 6px; }
+  .suggest li[aria-selected="true"], .suggest li[role="option"]:hover { background: var(--bg); }
 
   /* Groups */
   .group { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-m); margin-top: 10px; overflow: hidden; }
@@ -71,16 +81,18 @@
 
   /* Card rows */
   .card { border-top: 1px solid var(--line); }
-  .card > button { width: 100%; text-align: left; border: 0; background: none; padding: 9px 12px; display: grid; grid-template-columns: 44px 1fr auto; gap: 10px; align-items: center; cursor: pointer; }
+  .card > button { width: 100%; text-align: left; border: 0; background: none; padding: 9px 12px; display: grid; grid-template-columns: 12px 44px 1fr auto; gap: 10px; align-items: center; cursor: pointer; }
+  .card > button .chev { font-size: 10px; color: var(--muted); transition: transform .15s; }
+  .card > button[aria-expanded="true"] .chev { transform: rotate(90deg); }
   .num { font-family: var(--cond); font-weight: 600; font-size: 18px; color: var(--muted); }
   .who strong { display: block; font-weight: 600; }
   .who small { color: var(--muted); font-size: 13px; }
   .tags { display: flex; gap: 4px; }
   .card > button .tags { align-self: start; padding-top: 2px; }
-  @media (max-width: 600px) { .tags .badge { white-space: normal; max-width: 30vw; text-align: right; line-height: 1.2; padding: 2px 7px; } .card > button { grid-template-columns: 36px 1fr auto; } }
+  @media (max-width: 600px) { .tags .badge { white-space: normal; max-width: 30vw; text-align: right; line-height: 1.2; padding: 2px 7px; } .card > button { grid-template-columns: 10px 36px 1fr auto; gap: 8px; } }
   .badge { font-family: var(--cond); font-weight: 600; font-size: 13px; padding: 1px 7px; border-radius: 4px; background: var(--slab); color: #fff; white-space: nowrap; }
   .badge.var { background: transparent; color: var(--ink); border: 1px solid var(--line); }
-  .pars { padding: 2px 12px 12px 66px; display: flex; flex-wrap: wrap; gap: 5px; }
+  .pars { padding: 2px 12px 12px 88px; display: flex; flex-wrap: wrap; gap: 5px; }
   .par { font-size: 13px; padding: 2px 8px; border-radius: 4px; background: var(--bg); }
   .par.exc { background: transparent; border: 1px solid var(--ink); }
   .par.na { text-decoration: line-through; color: var(--muted); }
@@ -100,13 +112,6 @@
   .offm:disabled { cursor: default; }
   @media (min-width: 720px) { .slab { grid-template-columns: auto 1fr auto; } .offm { grid-column: 3; } }
 
-
-  /* Pill row collapse */
-  .ftoggle { display: inline-flex; align-items: center; gap: 4px; border: 0; background: none; padding: 5px 0 0; cursor: pointer; font-family: var(--cond); font-weight: 600; font-size: 15px; color: var(--muted); text-align: left; }
-  .ftoggle b { color: var(--ink); font-weight: 700; }
-  .ftoggle .chev { display: inline-block; transition: transform .15s; font-size: 11px; }
-  .ftoggle[aria-expanded="true"] .chev { transform: rotate(90deg); }
-  .toggle.more-pill { border-style: dashed; color: var(--muted); }
 
   /* Group by switch */
   .seg { display: inline-flex; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 2px; }
@@ -134,10 +139,15 @@
       <button class="tab" role="tab" data-tab="ones">1/1s<span class="n" id="n-ones"></span></button>
     </div>
   </div>
-  <input type="search" id="q" placeholder="Search players or teams" aria-label="Search players or teams">
-  <div class="suggest" id="suggest"></div>
-  <div class="row" id="players"></div>
-  <div id="filters"></div>
+  <div class="search">
+    <input type="search" id="q" placeholder="Search players or teams" aria-label="Search players or teams" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="suggest" autocomplete="off">
+    <ul class="suggest" id="suggest" role="listbox" aria-label="Pin a player" hidden></ul>
+  </div>
+  <div class="row" id="activebar">
+    <button class="fbtn" id="fbtn" aria-expanded="false" aria-controls="filters">Filters<b id="fcount"></b><span class="chev" aria-hidden="true">▼</span></button>
+    <span class="row" id="chips" style="margin:0"></span>
+  </div>
+  <div class="fpanel" id="filters" hidden></div>
     <div class="summary">
     <span class="left"><span id="count"></span><button class="link" id="clear" hidden>Clear filters</button><button class="link" id="allgroups"></button></span>
     <button class="btn" id="download">Download CSV</button>
@@ -152,7 +162,6 @@
   const TYPES = ['Base', 'Insert', 'SSP', 'Autograph', 'Memorabilia'];
   const STATUS = [['live', 'Live'], ['pulled', 'Pulled']];
   const GROUPINGS = [['subset', 'Subset'], ['team', 'Team'], ['player', 'Player']];
-  const AUTO_OPEN_GROUPS = 3, AUTO_OPEN_ROWS = 60;
   const $ = (s) => document.querySelector(s);
   const store = {
     get(k, d) { try { const v = localStorage.getItem('cl:' + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
@@ -185,7 +194,8 @@
     tab: store.get('tab', 'checklist'), q: '',
     f: { type: new Set(), team: new Set(), subset: new Set(), product: new Set(), status: new Set() },
     players: new Set(),
-    rowsOpen: store.get('rowsOpen', {}),            // pill rows the visitor expanded
+    panelOpen: false,                               // filters panel
+    sug: [], sugIdx: -1,                            // player suggestions under the search box
     groupBy: store.get('groupBy', { checklist: 'team', ones: 'team' }),
     taps: { checklist: new Map(), ones: new Map() }, // groups the visitor opened/closed, per view
     cardsOpen: new Set(),
@@ -218,6 +228,8 @@
     D.totalOnes = D.cards.reduce((n, c) => n + c.ones.length, 0);
     D.teams = [...new Set(D.cards.map((c) => c.Team))].sort();
     D.players = [...new Set(D.cards.flatMap((c) => c.playerNames))].sort();
+    D.playerTeam = new Map();
+    for (const c of D.cards) for (const n of c.playerNames) if (!D.playerTeam.has(n) && !c.Team.includes(' / ')) D.playerTeam.set(n, c.Team);
     setPulls(pulls);
     bind();
     render();
@@ -275,11 +287,10 @@
     for (const g of gs) g.cards.sort((a, b) => (a.Subset - b.Subset) || (a.Card_Number - b.Card_Number));
     return gs;
   }
-  // Groups open by default when the result is small. A group the visitor opened or closed keeps that
-  // state across filter changes until it drops out of the results; if it comes back, it uses the default.
+  // Groups start closed and open or close only when the visitor clicks them (or Expand/Collapse all).
+  // Filter changes never open or close a group.
   const taps = () => S.taps[S.tab];
-  function isOpen(g, autoOpen) { return taps().has(g.key) ? taps().get(g.key) : autoOpen; }
-  function pruneTaps(groups) { const keep = new Set(groups.map((g) => g.key)); for (const k of [...taps().keys()]) if (!keep.has(k)) taps().delete(k); }
+  const isOpen = (g) => taps().get(g.key) === true;
 
   // ---------- controls ----------
   function filterGroups() {
@@ -292,18 +303,25 @@
     if (S.tab === 'ones') g.push(['status', 'Status', STATUS]);
     return g;
   }
+  // Filters live in a panel behind the Filters button. Everything narrowing the list (filter pills and
+  // pinned players) shows as removable chips next to that button.
   function renderFilters() {
-    $('#filters').innerHTML = filterGroups().map(([key, label, items]) => {
-      const set = S.f[key], n = set.size, open = !!S.rowsOpen[key];
-      const shown = open ? items : items.filter(([v]) => set.has(v));
-      const hidden = items.length - shown.length;
-      const pills = shown.map(([v, t]) => `<button class="toggle" data-f="${key}" data-v="${esc(v)}" aria-pressed="${set.has(v)}">${esc(t)}</button>`).join('') +
-        (hidden ? `<button class="toggle more-pill" data-row="${key}" aria-label="Show all ${label.toLowerCase()} options">${n ? '+' + hidden + ' more' : 'Show ' + hidden}</button>` : '');
-      return `<div class="fgroup"><button class="ftoggle" data-row="${key}" aria-expanded="${open}"><span class="chev">▶</span>${label}${n ? ` <b>${n}</b>` : ''}</button><div class="pills" role="group" aria-label="${label}">${pills}</div></div>`;
-    }).join('');
-    const any = Object.entries(S.f).some(([k, v]) => v.size && (k !== 'status' || S.tab === 'ones')) || S.players.size || S.q;
-    $('#clear').hidden = !any;
+    const groups = filterGroups();
+    $('#filters').hidden = !S.panelOpen;
+    $('#fbtn').setAttribute('aria-expanded', S.panelOpen);
+    if (S.panelOpen) $('#filters').innerHTML = groups.map(([key, label, items]) =>
+      `<div class="fgroup"><span class="flabel" id="fl-${key}">${label}</span><div class="pills" role="group" aria-labelledby="fl-${key}">` +
+      items.map(([v, t]) => `<button class="toggle" data-f="${key}" data-v="${esc(v)}" aria-pressed="${S.f[key].has(v)}">${esc(t)}</button>`).join('') +
+      `</div></div>`).join('');
+    const chips = [];
+    for (const [key, , items] of groups) for (const [v, t] of items) if (S.f[key].has(v)) chips.push(chip(`data-f="${key}" data-v="${esc(v)}"`, t));
+    const nFilters = chips.length;
+    for (const p of S.players) chips.push(chip(`data-player="${esc(p)}"`, p));
+    $('#chips').innerHTML = chips.join('');
+    $('#fcount').textContent = nFilters ? ' ' + nFilters : '';
+    $('#clear').hidden = !(chips.length || S.q);
   }
+  const chip = (attrs, label) => `<button class="chip" ${attrs} aria-label="Remove ${esc(label)}">${esc(label)}<span aria-hidden="true">✕</span></button>`;
   function renderViewbar() {
     const by = S.groupBy[S.tab];
     $('#viewbar').innerHTML = `<span class="seglabel">Group by</span><span class="seg" role="group" aria-label="Group by">` +
@@ -311,15 +329,27 @@
   }
   function bind() {
     document.querySelectorAll('.tab').forEach((b) => b.onclick = () => { S.tab = b.dataset.tab; store.set('tab', S.tab); render(); });
-    $('#q').oninput = (e) => { S.q = e.target.value.trim().toLowerCase(); render(); };
-    $('#filters').onclick = (e) => {
-      const r = e.target.closest('[data-row]');
-      if (r) { const k = r.dataset.row; S.rowsOpen[k] = !S.rowsOpen[k]; store.set('rowsOpen', S.rowsOpen); renderFilters(); return; }
-      const b = e.target.closest('[data-f]'); if (!b) return;
-      const set = S.f[b.dataset.f], v = b.dataset.v;
+    $('#q').oninput = (e) => { S.q = e.target.value.trim().toLowerCase(); S.sugIdx = -1; render(); };
+    $('#q').onkeydown = onSearchKey;
+    $('#q').onfocus = () => renderSuggest();
+    $('#fbtn').onclick = () => { S.panelOpen = !S.panelOpen; renderFilters(); };
+    const togglePill = (e) => {
+      const b = e.target.closest('[data-f]'); if (!b) return false;
+      const key = b.dataset.f, v = b.dataset.v, set = S.f[key], inPanel = !!b.closest('#filters');
       set.has(v) ? set.delete(v) : set.add(v);
       render();
+      // The panel is redrawn on every change; keep keyboard focus on the same pill.
+      if (inPanel) $(`#filters [data-f="${key}"][data-v="${CSS.escape(v)}"]`)?.focus();
+      return true;
     };
+    $('#filters').onclick = togglePill;
+    $('#chips').onclick = (e) => {
+      if (togglePill(e)) return;
+      const b = e.target.closest('[data-player]'); if (b) { S.players.delete(b.dataset.player); render(); }
+    };
+    $('#suggest').onmousedown = (e) => e.preventDefault(); // keep focus in the search box
+    $('#suggest').onclick = (e) => { const li = e.target.closest('[data-add]'); if (li) pinPlayer(li.dataset.add); };
+    document.addEventListener('click', (e) => { if (!e.target.closest('.search')) hideSuggest(); });
     $('#viewbar').onclick = (e) => {
       const g = e.target.closest('[data-group]');
       if (g) { S.groupBy[S.tab] = g.dataset.group; store.set('groupBy', S.groupBy); render(); }
@@ -330,8 +360,6 @@
       for (const k of S.groupKeys || []) taps().set(k, open);
       render();
     };
-    $('#players').onclick = (e) => { const b = e.target.closest('[data-player]'); if (b) { S.players.delete(b.dataset.player); render(); } };
-    $('#suggest').onclick = (e) => { const b = e.target.closest('[data-add]'); if (b) { S.players.add(b.dataset.add); $('#q').value = ''; S.q = ''; render(); } };
     $('#download').onclick = download;
     $('#list').addEventListener('click', onListClick);
   }
@@ -339,29 +367,42 @@
   // ---------- rendering ----------
   function render() {
     document.querySelectorAll('.tab').forEach((b) => b.setAttribute('aria-selected', b.dataset.tab === S.tab));
-    renderFilters(); renderViewbar(); renderChips();
+    renderFilters(); renderViewbar(); renderSuggest();
     $('#n-ones').textContent = `${D.pulls.size}/${D.totalOnes}`;
     $('#n-checklist').textContent = D.cards.length;
     S.tab === 'checklist' ? renderChecklist() : renderOnes();
   }
-  function renderChips() {
-    const chips = [...S.players].map((p) => `<button class="chip" data-player="${esc(p)}" aria-label="Remove ${esc(p)}">${esc(p)}<span>✕</span></button>`);
-    $('#players').innerHTML = chips.join('');
-    $('#players').hidden = !chips.length;
-    $('#suggest').innerHTML = S.q.length >= 2 ? D.players.filter((p) => p.toLowerCase().includes(S.q) && !S.players.has(p)).slice(0, 8)
-      .map((p) => `<button data-add="${esc(p)}" title="Show only this player (add more to compare)">+ ${esc(p)}</button>`).join('') : '';
+  // Typing filters the list as before; matching players also appear in a dropdown so they can be pinned as chips.
+  function renderSuggest() {
+    const box = $('#suggest'), q = $('#q');
+    S.sug = S.q.length >= 2 && document.activeElement === q ? D.players.filter((p) => p.toLowerCase().includes(S.q) && !S.players.has(p)).slice(0, 8) : [];
+    if (S.sugIdx >= S.sug.length) S.sugIdx = S.sug.length - 1;
+    box.hidden = !S.sug.length;
+    q.setAttribute('aria-expanded', !!S.sug.length);
+    q.setAttribute('aria-activedescendant', S.sugIdx >= 0 ? 'sug-' + S.sugIdx : '');
+    box.innerHTML = S.sug.length ? `<li class="shead" role="presentation">Pin a player</li>` + S.sug.map((p, i) =>
+      `<li role="option" id="sug-${i}" data-add="${esc(p)}" aria-selected="${i === S.sugIdx}">${esc(p)}${D.playerTeam.has(p) ? `<small>${esc(D.playerTeam.get(p))}</small>` : ''}</li>`).join('') : '';
+  }
+  function hideSuggest() { S.sugIdx = -1; $('#suggest').hidden = true; $('#q').setAttribute('aria-expanded', 'false'); }
+  function pinPlayer(name) { S.players.add(name); S.q = ''; S.sugIdx = -1; $('#q').value = ''; render(); }
+  function onSearchKey(e) {
+    if (!S.sug.length) return;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const n = S.sug.length;
+      S.sugIdx = e.key === 'ArrowDown' ? (S.sugIdx + 1) % n : (S.sugIdx <= 0 ? n - 1 : S.sugIdx - 1);
+      renderSuggest();
+    } else if (e.key === 'Enter' && S.sugIdx >= 0) { e.preventDefault(); pinPlayer(S.sug[S.sugIdx]); }
+    else if (e.key === 'Escape') hideSuggest();
   }
 
-  function setGroupControls(groups, rowCount) {
-    pruneTaps(groups);
+  function setGroupControls(groups) {
     S.groupKeys = groups.map((g) => g.key);
-    const auto = groups.length <= AUTO_OPEN_GROUPS || rowCount <= AUTO_OPEN_ROWS;
-    const anyClosed = groups.some((g) => !isOpen(g, auto));
+    const anyClosed = groups.some((g) => !isOpen(g));
     const btn = $('#allgroups');
     btn.hidden = !groups.length;
     btn.dataset.action = anyClosed ? 'expand' : 'collapse';
     btn.textContent = anyClosed ? 'Expand all' : 'Collapse all';
-    return auto;
   }
   const ghead = (g, open, meta, bar) => `<button class="ghead" data-gkey="${esc(g.key)}" aria-expanded="${open}"><span class="chev">▶</span><span class="gname">${esc(g.name)}</span><span class="gmeta">${meta}</span>${bar || ''}</button>`;
   const progress = (got, total) => `<span class="bar"><i style="width:${total ? Math.round(100 * got / total) : 0}%"></i></span>`;
@@ -371,30 +412,41 @@
     S.current = { kind: 'cards', items: cards };
     $('#count').textContent = `${cards.length} card${cards.length === 1 ? '' : 's'}`;
     const groups = groupCards(cards);
-    const auto = setGroupControls(groups, cards.length);
-    if (!cards.length) return empty('No cards match these filters. Turn off a pill or clear the filters.');
+    setGroupControls(groups);
+    if (!cards.length) return empty('No cards match these filters. Remove a chip or clear the filters.');
     $('#list').innerHTML = groups.map((g) => {
-      const open = isOpen(g, auto);
+      const open = isOpen(g);
       return `<section class="group">${ghead(g, open, `${g.cards.length} card${g.cards.length === 1 ? '' : 's'}`)}${open ? g.cards.map(cardRow).join('') : ''}</section>`;
     }).join('');
   }
-  // Row: player (or card name) on the left with print run exceptions beneath; the pill names what the grouping doesn't.
+  // Row: chevron, number, player (or card name) with a parallel summary beneath; the pill names what the grouping doesn't.
+  // Clicking the row lists every parallel.
   function cardRow(c) {
     const open = S.cardsOpen.has(c.id);
     const by = S.groupBy[S.tab];
     const pill = by === 'subset' ? c.Team : c.sub.Subset;
-    const excText = cardExceptions(c).join(', ');
-    const body = open ? `<div class="pars">` + cardParallels(c).map((x) =>
+    const pars = cardParallels(c);
+    const body = open ? `<div class="pars">` + pars.map((x) =>
       `<span class="${x.na ? 'par na' : x.run === 1 ? 'par one' : x.exc ? 'par exc' : 'par'}">${esc(x.label)}</span>`).join('') + `</div>` : '';
+    const sum = cardSummary(pars);
     return `<div class="card"><button data-card="${c.id}" aria-expanded="${open}">
+      <span class="chev" aria-hidden="true">▶</span>
       <span class="num">#${c.Card_Number}</span>
-      <span class="who"><strong>${esc(c.name)}</strong>${excText ? `<small>${esc(excText)}</small>` : ''}</span>
+      <span class="who"><strong>${esc(c.name)}</strong>${sum ? `<small>${esc(sum)}</small>` : ''}</span>
       <span class="tags"><span class="badge">${esc(pill)}</span></span></button>${body}</div>`;
   }
-  // Exception labels for this card, in parallel order, limited to the selected products.
-  function cardExceptions(c) {
-    return (D.parsBySubset.get(c.Subset) || []).filter(parInProduct)
-      .map((p) => D.excByKey.get(c.id + ':' + p.id)).filter(Boolean).map((e) => e.Label);
+  // e.g. "19 parallels · /149 to /1 · one 1/1 · 4 custom print runs". The unnumbered Base entry isn't counted.
+  function cardSummary(pars) {
+    const real = pars.filter((x) => !x.na && !/^base$/i.test(x.label));
+    const runs = real.map((x) => x.run).filter((r) => r > 0);
+    const ones = runs.filter((r) => r === 1).length;
+    const excs = pars.filter((x) => x.exc).length;
+    const parts = [];
+    if (real.length) parts.push(`${real.length} parallel${real.length === 1 ? '' : 's'}`);
+    if (runs.length) { const hi = Math.max(...runs), lo = Math.min(...runs); parts.push(hi === lo ? `/${hi}` : `/${hi} to /${lo}`); }
+    if (ones) parts.push(ones === 1 ? 'one 1/1' : `${ones} 1/1s`);
+    if (excs) parts.push(`${excs} custom print run${excs === 1 ? '' : 's'}`);
+    return parts.join(' · ');
   }
   function slotContext(c, p) {
     const by = S.groupBy[S.tab], card = c.sub.Subset + ' #' + c.Card_Number;
@@ -407,15 +459,14 @@
     const totals = D.cards.filter(cardMatches).reduce((t, c) => { for (const p of productOnes(c)) { t.all++; if (pullOf(c, p)) t.got++; } return t; }, { all: 0, got: 0 });
     $('#count').textContent = `${totals.got} of ${totals.all} 1/1s pulled`;
     const groups = groupCards(D.cards.filter(cardMatches)).map((g) => ({ ...g, all: g.cards, cards: g.cards.filter((c) => visibleOnes(c).length) })).filter((g) => g.cards.length);
-    const rowCount = cards.reduce((n, c) => n + visibleOnes(c).length, 0);
-    const auto = setGroupControls(groups, rowCount);
+    setGroupControls(groups);
     S.current = { kind: 'slots', items: cards.flatMap((c) => visibleOnes(c).map((p) => ({ c, p }))) };
     if (!cards.length) return empty(S.f.status.size === 1 && S.f.status.has('pulled') ? 'None of these 1/1s have been pulled yet.' : 'No 1/1s match these filters.');
     // Progress counts every 1/1 in the group's cards (ignoring the status filter), so "Live" still shows how far along a group is.
     $('#list').innerHTML = groups.map((g) => {
       let got = 0, all = 0;
       for (const c of g.all) for (const p of productOnes(c)) { all++; if (pullOf(c, p)) got++; }
-      const open = isOpen(g, auto);
+      const open = isOpen(g);
       const body = open ? g.cards.flatMap((c) => visibleOnes(c).map((p) => slotRow(c, p))).join('') : '';
       return `<section class="group">${ghead(g, open, `${got} of ${all} pulled`, progress(got, all))}${body}</section>`;
     }).join('');
