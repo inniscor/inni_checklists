@@ -4,6 +4,10 @@ All changes to the checklist widget, newest first. **Unreleased** describes what
 
 ## Unreleased
 
+_Nothing yet._
+
+## v2 — 2026-11-25
+
 ### Changed
 - Pulled 1/1s show an **Off market** toggle in place of the free-text Forever Home box. The widget no longer reads or writes `Pulls.Forever_Home`.
 - The 1/1 CSV export has **Off Market** and **Reported** columns in place of Forever Home.
