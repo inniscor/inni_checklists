@@ -306,12 +306,6 @@
         }
       },
       {
-        "id": "Forever_Home",
-        "type": "Text",
-        "kind": "data",
-        "label": "Forever Home"
-      },
-      {
         "id": "Off_Market",
         "type": "Bool",
         "kind": "data",
@@ -424,13 +418,6 @@
     {
       "table": "Pulls",
       "columns": "*",
-      "condition": "user.Access != OWNER and newRec.Forever_Home",
-      "permissions": "-C",
-      "memo": "Forever Home text is no longer accepted. Use the Off market toggle instead."
-    },
-    {
-      "table": "Pulls",
-      "columns": "*",
       "condition": "user.Access in [EDITOR, OWNER]",
       "permissions": "+CRUD"
     },
@@ -442,7 +429,7 @@
     },
     {
       "table": "Pulls",
-      "columns": "Card_Key,Parallel_Key,Reported_At,Forever_Home",
+      "columns": "Card_Key,Parallel_Key,Reported_At",
       "condition": "user.Access != OWNER",
       "permissions": "-U",
       "memo": "A logged pull can't be changed. To fix a mistake, mark it not pulled and log it again."
