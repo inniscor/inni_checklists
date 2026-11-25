@@ -443,17 +443,18 @@
   function cardRow(c) {
     const open = S.cardsOpen.has(c.id);
     const by = S.groupBy[S.tab];
-    const where = by === 'subset' ? c.Team : c.sub.Subset;
+    // The group header already names the player when grouped by player, so the subset leads and the card name follows.
+    const [title, detail] = by === 'player' ? [c.sub.Subset, c.name] : [c.name, by === 'subset' ? c.Team : c.sub.Subset];
     const pars = cardParallels(c);
     const n = pars.filter((x) => !x.na && !/^base$/i.test(x.label)).length; // the unnumbered Base entry isn't a parallel
     const excs = pars.filter((x) => x.exc).length;
-    const sub = where + (excs ? ` · ${excs} custom print run${excs === 1 ? '' : 's'}` : '');
+    const sub = detail + (excs ? ` · ${excs} custom print run${excs === 1 ? '' : 's'}` : '');
     const body = open ? `<div class="pars">` + pars.map((x) => x.run === 1 && !x.na ? oneChip(c, x) :
       `<span class="${x.na ? 'par na' : x.exc ? 'par exc' : 'par'}">${esc(x.label)}</span>`).join('') + `</div>` : '';
     return `<div class="card"><button data-card="${c.id}" aria-expanded="${open}">
       <span class="chev" aria-hidden="true">▶</span>
       <span class="num">#${c.Card_Number}</span>
-      <span class="who"><strong>${esc(c.name)}</strong><small>${esc(sub)}</small></span>
+      <span class="who"><strong>${esc(title)}</strong><small>${esc(sub)}</small></span>
       <span class="tags"><span class="badge pcount" role="img" aria-label="${n} parallel${n === 1 ? '' : 's'}">${n}${PARALLEL_GLYPH}</span></span></button>${body}</div>`;
   }
   function slotContext(c, p) {
