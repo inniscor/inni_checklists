@@ -94,8 +94,11 @@
   .stamp[aria-pressed="true"]::before { opacity: 0; }
   .stamp:disabled { cursor: default; }
   .stamp .t { position: relative; }
-  .home { grid-column: 2; width: 100%; padding: 5px 8px; border: 1px solid var(--line); border-radius: var(--radius-s); font-size: 14px; background: var(--pitch-soft); }
-  @media (min-width: 720px) { .slab { grid-template-columns: auto 1fr minmax(180px, 34%); } .home { grid-column: 3; } }
+  .offm { grid-column: 2; justify-self: start; display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 4px 11px; font-size: 14px; color: var(--muted); cursor: pointer; white-space: nowrap; }
+  .offm .box { display: inline-grid; place-items: center; width: 14px; height: 14px; border: 1.5px solid currentColor; border-radius: 3px; font-size: 11px; line-height: 1; }
+  .offm[aria-pressed="true"] { background: var(--pitch-soft); border-color: var(--pitch); color: var(--pitch); font-weight: 600; }
+  .offm:disabled { cursor: default; }
+  @media (min-width: 720px) { .slab { grid-template-columns: auto 1fr auto; } .offm { grid-column: 3; } }
 
 
   /* Pill row collapse */
@@ -167,9 +170,9 @@
   function applyDemo(actions) {
     const P = demo.Pulls;
     for (const a of actions) {
-      if (a[0] === 'AddRecord') { P.id.push(demoNextId++); P.Card_Key.push(a[3].Card_Key); P.Parallel_Key.push(a[3].Parallel_Key); P.Forever_Home.push(a[3].Forever_Home || ''); }
+      if (a[0] === 'AddRecord') { P.id.push(demoNextId++); P.Card_Key.push(a[3].Card_Key); P.Parallel_Key.push(a[3].Parallel_Key); (P.Off_Market ||= []).push(false); (P.Reported_At ||= []).push(Date.now() / 1000); }
       if (a[0] === 'RemoveRecord') { const i = P.id.indexOf(a[2]); if (i >= 0) for (const k in P) P[k].splice(i, 1); }
-      if (a[0] === 'UpdateRecord') { const i = P.id.indexOf(a[2]); if (i >= 0) P.Forever_Home[i] = a[3].Forever_Home; }
+      if (a[0] === 'UpdateRecord') { const i = P.id.indexOf(a[2]); if (i >= 0) for (const k in a[3]) (P[k] ||= [])[i] = a[3][k]; }
     }
   }
   const refs = (v) => Array.isArray(v) ? (v[0] === 'L' ? v.slice(1) : v) : (typeof v === 'string' && v.startsWith('[') ? JSON.parse(v) : []);
@@ -219,7 +222,12 @@
     bind();
     render();
   }
-  function setPulls(pulls) { D.pulls = new Map(); for (const p of rows(pulls)) D.pulls.set(p.Card_Key + ':' + p.Parallel_Key, p); }
+  // Off_Market and Reported_At were added to Pulls later; docs without them just don't show the toggle or dates.
+  function setPulls(pulls) {
+    D.hasOffMarket = 'Off_Market' in pulls;
+    D.hasReported = 'Reported_At' in pulls;
+    D.pulls = new Map(); for (const p of rows(pulls)) D.pulls.set(p.Card_Key + ':' + p.Parallel_Key, p);
+  }
   async function reloadPulls() { setPulls(await source.fetch('Pulls')); render(); }
   const pullOf = (c, p) => D.pulls.get(c.id + ':' + p.id);
 
@@ -326,7 +334,6 @@
     $('#suggest').onclick = (e) => { const b = e.target.closest('[data-add]'); if (b) { S.players.add(b.dataset.add); $('#q').value = ''; S.q = ''; render(); } };
     $('#download').onclick = download;
     $('#list').addEventListener('click', onListClick);
-    $('#list').addEventListener('change', onListChange);
   }
 
   // ---------- rendering ----------
@@ -419,10 +426,13 @@
     return `<div class="slab">
       <button class="stamp" data-slot="${c.id}:${p.id}" aria-pressed="${!!pull}" aria-label="${pull ? 'Mark not pulled' : 'Mark pulled'}: ${esc(c.name)} ${esc(p.Parallel)}" ${canEdit() ? '' : 'disabled'}><span class="t">${pull ? '✓ Pulled' : '1/1'}</span></button>
       <span class="who"><strong>${esc(c.name)}</strong><small>${esc(slotContext(c, p))}</small></span>
-      ${pull ? homeInput(pull, c, p) : ''}
+      ${pull && D.hasOffMarket ? offMarketToggle(pull, c, p) : ''}
     </div>`;
   }
-  const homeInput = (pull, c, p) => `<input class="home" data-home="${pull.id}" value="${esc(pull.Forever_Home || '')}" placeholder="Forever home or contact" aria-label="Forever home for ${esc(c.name)} ${esc(p.Parallel)}">`;
+  const offMarketToggle = (pull, c, p) => {
+    const on = !!pull.Off_Market;
+    return `<button class="offm" data-offm="${pull.id}" aria-pressed="${on}" aria-label="Off market: ${esc(c.name)} ${esc(p.Parallel)}" title="The owner has said this card isn't for sale" ${canEdit() && pull.id > 0 ? '' : 'disabled'}><span class="box" aria-hidden="true">${on ? '✓' : ''}</span>Off market</button>`;
+  };
   function empty(msg) { $('#list').innerHTML = `<div class="empty">${esc(msg)}</div>`; }
 
   // ---------- interactions ----------
@@ -431,19 +441,25 @@
     if (gh) { taps().set(gh.dataset.gkey, gh.getAttribute('aria-expanded') !== 'true'); render(); return; }
     const st = e.target.closest('[data-slot]');
     if (st) { togglePull(st.dataset.slot); return; }
+    const om = e.target.closest('[data-offm]');
+    if (om) { toggleOffMarket(+om.dataset.offm); return; }
     const cb = e.target.closest('[data-card]');
     if (cb) { const id = +cb.dataset.card; S.cardsOpen.has(id) ? S.cardsOpen.delete(id) : S.cardsOpen.add(id); render(); }
   }
-  async function onListChange(e) {
-    const home = e.target.closest('[data-home]');
-    if (!home) return;
-    try { await source.act([['UpdateRecord', 'Pulls', +home.dataset.home, { Forever_Home: home.value }]]); toast('Saved'); if (demo) reloadPulls(); }
-    catch (err) { toast(writeError(err)); reloadPulls(); }
+  async function toggleOffMarket(pullId) {
+    const pull = [...D.pulls.values()].find((p) => p.id === pullId);
+    if (!pull) return;
+    const next = !pull.Off_Market;
+    pull.Off_Market = next;
+    render();
+    try { await source.act([['UpdateRecord', 'Pulls', pullId, { Off_Market: next }]]); toast(next ? 'Marked off market' : 'Marked not off market'); }
+    catch (err) { toast(writeError(err)); }
+    reloadPulls();
   }
   async function togglePull(key) {
     const [cardId, parId] = key.split(':').map(Number);
     const existing = D.pulls.get(key);
-    if (existing) D.pulls.delete(key); else D.pulls.set(key, { id: -1, Card_Key: cardId, Parallel_Key: parId, Forever_Home: '' });
+    if (existing) D.pulls.delete(key); else D.pulls.set(key, { id: -1, Card_Key: cardId, Parallel_Key: parId, Off_Market: false });
     render();
     try {
       if (existing) await source.act([['RemoveRecord', 'Pulls', existing.id]]);
@@ -462,8 +478,16 @@
     const cur = S.current || { kind: 'cards', items: [] };
     let head, body;
     if (cur.kind === 'slots') {
-      head = ['Team', 'Card Name', 'Players', 'Subset', 'Card Number', 'Parallel', 'Pulled', 'Forever Home'];
-      body = cur.items.map(({ c, p }) => { const pl = pullOf(c, p); return [c.Team, c.name, c.playerNames.join('; '), c.sub.Subset, c.Card_Number, p.Parallel, pl ? 'Yes' : 'No', pl ? pl.Forever_Home || '' : '']; });
+      head = ['Team', 'Card Name', 'Players', 'Subset', 'Card Number', 'Parallel', 'Pulled'];
+      if (D.hasOffMarket) head.push('Off Market');
+      if (D.hasReported) head.push('Reported');
+      body = cur.items.map(({ c, p }) => {
+        const pl = pullOf(c, p);
+        const r = [c.Team, c.name, c.playerNames.join('; '), c.sub.Subset, c.Card_Number, p.Parallel, pl ? 'Yes' : 'No'];
+        if (D.hasOffMarket) r.push(pl ? (pl.Off_Market ? 'Yes' : 'No') : '');
+        if (D.hasReported) r.push(pl && pl.Reported_At ? isoDate(pl.Reported_At) : '');
+        return r;
+      });
     } else {
       head = ['Subset', 'Card Number', 'Card Name', 'Players', 'Team', 'Position', 'Types', 'Parallels', '1/1s'];
       body = cur.items.map((c) => [c.sub.Subset, c.Card_Number, c.name, c.playerNames.join('; '), c.Team, c.Position || '', TYPES.filter((t) => c.sub[t]).join('; '),
@@ -487,6 +511,8 @@
   }
 
   // ---------- utils ----------
+  // Grist DateTime values are seconds since the epoch.
+  const isoDate = (sec) => new Date(sec * 1000).toLocaleDateString('en-CA');
   function esc(s) { return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]); }
   let tt; function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('show'); clearTimeout(tt); tt = setTimeout(() => t.classList.remove('show'), 2600); }
 
