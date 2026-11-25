@@ -1,0 +1,466 @@
+{
+  "tables": {
+    "Products": [
+      {
+        "id": "Product",
+        "type": "Text",
+        "kind": "data"
+      },
+      {
+        "id": "Line",
+        "type": "Text",
+        "kind": "data"
+      },
+      {
+        "id": "Format",
+        "type": "Text",
+        "kind": "data"
+      }
+    ],
+    "Subsets": [
+      {
+        "id": "Subset",
+        "type": "Text",
+        "kind": "data"
+      },
+      {
+        "id": "Base",
+        "type": "Bool",
+        "kind": "data"
+      },
+      {
+        "id": "Insert",
+        "type": "Bool",
+        "kind": "data"
+      },
+      {
+        "id": "SSP",
+        "type": "Bool",
+        "kind": "data"
+      },
+      {
+        "id": "Autograph",
+        "type": "Bool",
+        "kind": "data"
+      },
+      {
+        "id": "Memorabilia",
+        "type": "Bool",
+        "kind": "data"
+      }
+    ],
+    "Cards": [
+      {
+        "id": "Card_Key",
+        "type": "Text",
+        "kind": "formula",
+        "label": "Card Key",
+        "formula": "\"%s #%s\" % ($Subset.Subset, $Card_Number)"
+      },
+      {
+        "id": "Subset",
+        "type": "Ref:Subsets",
+        "kind": "data",
+        "show_column": "Subset",
+        "widget_options": {
+          "widget": "Reference",
+          "alignment": "left"
+        }
+      },
+      {
+        "id": "Card_Number",
+        "type": "Int",
+        "kind": "data",
+        "label": "Card Number",
+        "widget_options": {
+          "widget": "TextBox",
+          "alignment": "right",
+          "decimals": 0
+        }
+      },
+      {
+        "id": "Players",
+        "type": "RefList:Players",
+        "kind": "formula",
+        "formula": "import re, unicodedata\n\ndef norm(s):\n    s = unicodedata.normalize(\"NFKD\", s or \"\")\n    return \"\".join(ch for ch in s if not unicodedata.combining(ch)).lower()\n\ntext = norm($Card_Name)\nif not text.strip():\n    return []\n\nhits = []\n# Longest names first, so \"Sam Coffey\" wins over a separate \"Sam\"\nfor p in sorted(Players.all, key=lambda p: -len(p.Player_Name or \"\")):\n    n = norm(p.Player_Name).strip()\n    if not n:\n        continue\n    m = re.search(r\"(?<!\\w)\" + re.escape(n) + r\"(?!\\w)\", text)\n    if m:\n        hits.append((m.start(), p.id))\n        # blank out the match so a shorter name can't match inside it\n        text = text[:m.start()] + \" \" * (m.end() - m.start()) + text[m.end():]\n\n# return players in the order they appear on the card\nreturn [pid for _, pid in sorted(hits)]",
+        "show_column": "Player_Name",
+        "widget_options": {
+          "widget": "Reference",
+          "alignment": "left"
+        }
+      },
+      {
+        "id": "Team",
+        "type": "Text",
+        "kind": "data"
+      },
+      {
+        "id": "Position",
+        "type": "Text",
+        "kind": "data"
+      },
+      {
+        "id": "Card_Name",
+        "type": "Text",
+        "kind": "data",
+        "label": "Card Name"
+      },
+      {
+        "id": "Print_Run_Exceptions",
+        "type": "RefList:PrintRunExceptions",
+        "kind": "formula",
+        "label": "Print Run Exceptions",
+        "formula": "PrintRunExceptions.lookupRecords(Card_Key=$id)",
+        "show_column": "Label"
+      },
+      {
+        "id": "One_of_Ones",
+        "type": "RefList:Parallels",
+        "kind": "formula",
+        "label": "One of Ones",
+        "formula": "result = []\nfor p in Parallels.lookupRecords(Subset=$Subset):\n    exc = PrintRunExceptions.lookupOne(Card_Key=$id, Parallel_Key=p.id)\n    run = (None if exc.Not_Available else exc.Print_Run) if exc else p.Print_Run\n    if run == 1:\n        result.append(p.id)\nreturn result",
+        "show_column": "Parallel"
+      }
+    ],
+    "Parallels": [
+      {
+        "id": "Parallel_Key",
+        "type": "Text",
+        "kind": "formula",
+        "label": "Parallel Key",
+        "formula": "\"%s | %s\" % ($Subset.Subset, $Parallel)"
+      },
+      {
+        "id": "Subset",
+        "type": "Ref:Subsets",
+        "kind": "data",
+        "show_column": "Subset",
+        "widget_options": {
+          "widget": "Reference",
+          "alignment": "left"
+        }
+      },
+      {
+        "id": "Parallel",
+        "type": "Text",
+        "kind": "data"
+      },
+      {
+        "id": "Print_Run",
+        "type": "Int",
+        "kind": "data",
+        "label": "Print Run",
+        "widget_options": {
+          "widget": "TextBox",
+          "alignment": "right",
+          "decimals": 0
+        }
+      },
+      {
+        "id": "ParallelProducts_Product",
+        "type": "RefList:Products",
+        "kind": "formula",
+        "formula": "ParallelProducts.lookupRecords(Parallel_Key=$id).Product",
+        "show_column": "Product"
+      }
+    ],
+    "ParallelProducts": [
+      {
+        "id": "Parallel_Key",
+        "type": "Ref:Parallels",
+        "kind": "data",
+        "label": "Parallel Key",
+        "show_column": "Parallel_Key",
+        "widget_options": {
+          "widget": "Reference",
+          "alignment": "left"
+        }
+      },
+      {
+        "id": "Product",
+        "type": "Ref:Products",
+        "kind": "data",
+        "show_column": "Product",
+        "widget_options": {
+          "widget": "Reference",
+          "alignment": "left"
+        }
+      }
+    ],
+    "PrintRunExceptions": [
+      {
+        "id": "Card_Key",
+        "type": "Ref:Cards",
+        "kind": "data",
+        "label": "Card Key",
+        "show_column": "Card_Key",
+        "widget_options": {
+          "widget": "Reference",
+          "alignment": "left"
+        }
+      },
+      {
+        "id": "Parallel_Key",
+        "type": "Ref:Parallels",
+        "kind": "data",
+        "label": "Parallel Key",
+        "show_column": "Parallel_Key",
+        "widget_options": {
+          "widget": "Reference",
+          "alignment": "left"
+        }
+      },
+      {
+        "id": "Print_Run",
+        "type": "Int",
+        "kind": "data",
+        "label": "Print Run",
+        "widget_options": {
+          "widget": "TextBox",
+          "alignment": "right",
+          "decimals": 0
+        }
+      },
+      {
+        "id": "Not_Available",
+        "type": "Bool",
+        "kind": "data",
+        "label": "Not Available"
+      },
+      {
+        "id": "Source_Note",
+        "type": "Text",
+        "kind": "data",
+        "label": "Source Note"
+      },
+      {
+        "id": "Label",
+        "type": "Any",
+        "kind": "formula",
+        "formula": "name = $Parallel_Key.Parallel\nif $Not_Available:\n    return \"No %s\" % name\nreturn \"%s /%d\" % (name, $Print_Run)"
+      }
+    ],
+    "Pulls": [
+      {
+        "id": "Card_Key",
+        "type": "Ref:Cards",
+        "kind": "data",
+        "label": "Card Key",
+        "show_column": "Card_Key",
+        "widget_options": {
+          "widget": "Reference",
+          "alignment": "left"
+        }
+      },
+      {
+        "id": "Parallel_Key",
+        "type": "Ref:Parallels",
+        "kind": "data",
+        "label": "Parallel Key",
+        "show_column": "Parallel_Key",
+        "widget_options": {
+          "widget": "Reference",
+          "alignment": "left"
+        }
+      },
+      {
+        "id": "Forever_Home",
+        "type": "Text",
+        "kind": "data",
+        "label": "Forever Home"
+      }
+    ],
+    "Players": [
+      {
+        "id": "Player_Name",
+        "type": "Text",
+        "kind": "data",
+        "label": "Player Name",
+        "widget_options": {
+          "widget": "TextBox",
+          "alignment": "left"
+        }
+      },
+      {
+        "id": "Cards",
+        "type": "Int",
+        "kind": "formula",
+        "formula": "len($Player_Cards)"
+      },
+      {
+        "id": "Autographs",
+        "type": "Any",
+        "kind": "formula",
+        "formula": "len([c for c in $Player_Cards if c.Subset.Autograph])"
+      },
+      {
+        "id": "Memorabilia",
+        "type": "Any",
+        "kind": "formula",
+        "formula": "len([c for c in $Player_Cards if c.Subset.Memorabilia])"
+      },
+      {
+        "id": "Case_Hits",
+        "type": "Any",
+        "kind": "formula",
+        "label": "Case Hits",
+        "formula": "len([c for c in $Player_Cards if c.Subset.SSP])"
+      },
+      {
+        "id": "Value",
+        "type": "Any",
+        "kind": "empty"
+      },
+      {
+        "id": "Rookie",
+        "type": "Bool",
+        "kind": "data"
+      },
+      {
+        "id": "One_of_Ones",
+        "type": "Any",
+        "kind": "formula",
+        "label": "One of Ones",
+        "formula": "SUM(len(c.One_of_Ones) for c in $Player_Cards)"
+      },
+      {
+        "id": "Player_Cards",
+        "type": "RefList:Cards",
+        "kind": "formula",
+        "label": "Player Cards",
+        "formula": "Cards.lookupRecords(Players=CONTAINS($id))",
+        "show_column": "Card_Key"
+      }
+    ]
+  },
+  "access_rules": [
+    {
+      "table": "*",
+      "columns": "*",
+      "condition": "user.Access != OWNER",
+      "permissions": "-S"
+    },
+    {
+      "table": "*",
+      "columns": "*",
+      "condition": "user.Access != OWNER",
+      "permissions": "+R-CUD"
+    },
+    {
+      "table": "*SPECIAL",
+      "columns": "SeedRule",
+      "condition": "user.Access in [OWNER]",
+      "permissions": "+CRUD"
+    },
+    {
+      "table": "Pulls",
+      "columns": "*",
+      "condition": "user.Access in [EDITOR, OWNER]",
+      "permissions": "+CRUD"
+    },
+    {
+      "table": "Players",
+      "columns": "Value",
+      "condition": "user.Access != OWNER",
+      "permissions": "-RU"
+    }
+  ],
+  "pages": [
+    {
+      "name": "Checklist",
+      "widgets": [
+        {
+          "type": "custom",
+          "table": "Pulls",
+          "title": "Checklist",
+          "description": "Checklist and 1/1 tracker",
+          "custom_widget": {
+            "url": "https://inniscor.github.io/inni_checklists/widgets/latest/",
+            "access": "full"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Products",
+      "widgets": [
+        {
+          "type": "record",
+          "table": "Products"
+        }
+      ]
+    },
+    {
+      "name": "Subsets",
+      "widgets": [
+        {
+          "type": "record",
+          "table": "Subsets"
+        }
+      ]
+    },
+    {
+      "name": "Cards",
+      "widgets": [
+        {
+          "type": "record",
+          "table": "Cards"
+        }
+      ]
+    },
+    {
+      "name": "Parallels",
+      "widgets": [
+        {
+          "type": "record",
+          "table": "Parallels"
+        }
+      ]
+    },
+    {
+      "name": "Parallel Products",
+      "widgets": [
+        {
+          "type": "record",
+          "table": "ParallelProducts"
+        }
+      ]
+    },
+    {
+      "name": "Print Run Exceptions",
+      "widgets": [
+        {
+          "type": "record",
+          "table": "PrintRunExceptions"
+        }
+      ]
+    },
+    {
+      "name": "Pulls",
+      "widgets": [
+        {
+          "type": "record",
+          "table": "Pulls"
+        }
+      ]
+    },
+    {
+      "name": "By Team",
+      "widgets": [
+        {
+          "type": "record",
+          "table": "Cards"
+        }
+      ]
+    },
+    {
+      "name": "Players",
+      "widgets": [
+        {
+          "type": "record",
+          "table": "Players"
+        }
+      ]
+    }
+  ]
+}
