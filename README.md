@@ -10,7 +10,6 @@ The site is published by the **Publish site** GitHub Actions workflow on every p
 | `widgets/dev/` | Sandbox doc only | Work happens here. May break. |
 | `widgets/latest/` | Live set docs (default) | Not in the repo. Generated at publish time from the version named in `widgets/LATEST`. |
 | `widgets/v1/`, `v2/`, … | Any doc that needs a fixed version | Frozen once released. Never edit a released folder. |
-| `widgets/default/` | Nothing, once live docs move to `latest/` | Legacy; delete after the switch. |
 
 Widget URL pattern: `https://inniscor.github.io/inni_checklists/widgets/<folder>/`
 
