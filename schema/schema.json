@@ -183,14 +183,7 @@
         "show_column": "Product",
         "widget_options": {
           "widget": "Reference",
-          "alignment": "left",
-          "choices": [
-            "Donruss Hobby",
-            "Donruss Booster",
-            "Donruss Blaster",
-            "Optic Hobby",
-            "Optic Hobby FOTL"
-          ]
+          "alignment": "left"
         }
       }
     ],
@@ -379,8 +372,8 @@
         {
           "type": "custom",
           "table": "Pulls",
-          "title": "2026 Panini Prizm Black NWSL",
-          "description": "Prizm Black Checklist and 1/1 Combo View",
+          "title": "Checklist",
+          "description": "Checklist and 1/1 tracker",
           "custom_widget": {
             "url": "https://inniscor.github.io/inni_checklists/widgets/latest/",
             "access": "full"
