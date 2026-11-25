@@ -27,3 +27,19 @@ Change `widgets/LATEST` back to the previous version and push, or pin the affect
 
 ### Building locally
 `bash scripts/build-site.sh` writes the site to `_site/`. It fails if `LATEST` names a missing version or if a `widgets/latest/` folder was committed.
+
+## Schema
+
+`schema/` holds the document structure every set doc is built from:
+
+- `checklist-template.grist`: an empty Grist document with every table, formula, page, access rule and the checklist widget (pointed at `widgets/latest/`). To start a new set, import it in Grist (Add New → Import Document) and fill in the data.
+- `schema.json`: a readable copy of the same structure, generated from the template. The template is binary, so review changes here.
+
+### Updating the schema
+1. Make the change in the sandbox doc.
+2. Download it as a template (no data) and run:
+   `python3 scripts/grist_schema.py import <downloaded>.grist`
+   This refuses files that contain rows, replaces any email addresses Grist stored in the document's history, points the widget at `latest/`, and regenerates `schema.json`.
+3. Commit both files. The **Schema check** workflow fails if they don't match or if the template contains an email address.
+
+`python3 scripts/grist_schema.py dump <file>.grist` prints the schema of any `.grist` file, which is handy for comparing a live doc's download against the template.

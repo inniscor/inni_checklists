@@ -1,0 +1,23 @@
+name: Schema check
+
+on:
+  pull_request:
+    paths:
+      - "schema/**"
+      - "scripts/grist_schema.py"
+  push:
+    branches: [main]
+    paths:
+      - "schema/**"
+      - "scripts/grist_schema.py"
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Template and schema.json match
+        run: python3 scripts/grist_schema.py check
