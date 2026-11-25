@@ -48,7 +48,7 @@
   .fbtn[aria-expanded="true"] { border-color: var(--ink); }
   .fbtn b { font-weight: 600; }
   .fbtn .chev { font-size: 10px; color: var(--muted); transition: transform .15s; }
-  .fbtn[aria-expanded="true"] .chev { transform: rotate(180deg); }
+  .fbtn[aria-expanded="true"] .chev { transform: rotate(90deg); }
   .toggle { flex: none; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 4px 11px; font-size: 14px; cursor: pointer; white-space: nowrap; }
   .toggle[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: #fff; }
   .row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px; }
@@ -147,7 +147,7 @@
     <ul class="suggest" id="suggest" role="listbox" aria-label="Pin a player" hidden></ul>
   </div>
   <div class="row" id="activebar">
-    <button class="fbtn" id="fbtn" aria-expanded="false" aria-controls="filters">Filters<b id="fcount"></b><span class="chev" aria-hidden="true">▼</span></button>
+    <button class="fbtn" id="fbtn" aria-expanded="false" aria-controls="filters">Filters<b id="fcount"></b><span class="chev" aria-hidden="true">▶</span></button>
     <span class="row" id="chips" style="margin:0"></span>
   </div>
   <div class="fpanel" id="filters" hidden></div>
