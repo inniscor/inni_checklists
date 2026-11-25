@@ -91,6 +91,8 @@
   .card > button .tags { align-self: start; padding-top: 2px; }
   @media (max-width: 600px) { .tags .badge { white-space: normal; max-width: 30vw; text-align: right; line-height: 1.2; padding: 2px 7px; } .card > button { grid-template-columns: 10px 36px 1fr auto; gap: 8px; } }
   .badge { font-family: var(--cond); font-weight: 600; font-size: 13px; padding: 1px 7px; border-radius: 4px; background: var(--slab); color: #fff; white-space: nowrap; }
+  .badge.pcount { display: inline-flex; align-items: center; gap: 4px; font-size: 14px; padding: 1px 7px 1px 8px; }
+  .pglyph { width: 15px; height: 15px; display: block; }
   .badge.var { background: transparent; color: var(--ink); border: 1px solid var(--line); }
   .pars { padding: 2px 12px 12px 88px; display: flex; flex-wrap: wrap; gap: 5px; }
   .par { font-size: 13px; padding: 2px 8px; border-radius: 4px; background: var(--bg); }
@@ -132,6 +134,7 @@
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><linearGradient id="rainbow" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF5E7E"/><stop offset=".25" stop-color="#FFB547"/><stop offset=".5" stop-color="#5EE6A8"/><stop offset=".75" stop-color="#5AB8FF"/><stop offset="1" stop-color="#B07CFF"/></linearGradient></defs></svg>
 <div class="wrap">
   <div class="tabbar">
     <div class="tabs" role="tablist">
@@ -419,34 +422,24 @@
       return `<section class="group">${ghead(g, open, `${g.cards.length} card${g.cards.length === 1 ? '' : 's'}`)}${open ? g.cards.map(cardRow).join('') : ''}</section>`;
     }).join('');
   }
-  // Row: chevron, number, player (or card name) with a parallel summary beneath; the pill names what the grouping doesn't.
-  // Clicking the row lists every parallel.
+  // Row: chevron, number, player (or card name) with what the grouping doesn't show beneath (subset, or team when
+  // grouped by subset) plus any custom print runs. The pill counts the card's parallels. Clicking the row lists them.
+  const PARALLEL_GLYPH = '<svg class="pglyph" viewBox="0 0 16 16" aria-hidden="true"><rect x="5" y="1.5" width="9" height="12" rx="1.6" fill="none" stroke="url(#rainbow)" stroke-width="1.4"/><rect x="2" y="3.5" width="9" height="11" rx="1.6" fill="url(#rainbow)"/></svg>';
   function cardRow(c) {
     const open = S.cardsOpen.has(c.id);
     const by = S.groupBy[S.tab];
-    const pill = by === 'subset' ? c.Team : c.sub.Subset;
+    const where = by === 'subset' ? c.Team : c.sub.Subset;
     const pars = cardParallels(c);
+    const n = pars.filter((x) => !x.na && !/^base$/i.test(x.label)).length; // the unnumbered Base entry isn't a parallel
+    const excs = pars.filter((x) => x.exc).length;
+    const sub = where + (excs ? ` · ${excs} custom print run${excs === 1 ? '' : 's'}` : '');
     const body = open ? `<div class="pars">` + pars.map((x) =>
       `<span class="${x.na ? 'par na' : x.run === 1 ? 'par one' : x.exc ? 'par exc' : 'par'}">${esc(x.label)}</span>`).join('') + `</div>` : '';
-    const sum = cardSummary(pars);
     return `<div class="card"><button data-card="${c.id}" aria-expanded="${open}">
       <span class="chev" aria-hidden="true">▶</span>
       <span class="num">#${c.Card_Number}</span>
-      <span class="who"><strong>${esc(c.name)}</strong>${sum ? `<small>${esc(sum)}</small>` : ''}</span>
-      <span class="tags"><span class="badge">${esc(pill)}</span></span></button>${body}</div>`;
-  }
-  // e.g. "19 parallels · /149 to /1 · one 1/1 · 4 custom print runs". The unnumbered Base entry isn't counted.
-  function cardSummary(pars) {
-    const real = pars.filter((x) => !x.na && !/^base$/i.test(x.label));
-    const runs = real.map((x) => x.run).filter((r) => r > 0);
-    const ones = runs.filter((r) => r === 1).length;
-    const excs = pars.filter((x) => x.exc).length;
-    const parts = [];
-    if (real.length) parts.push(`${real.length} parallel${real.length === 1 ? '' : 's'}`);
-    if (runs.length) { const hi = Math.max(...runs), lo = Math.min(...runs); parts.push(hi === lo ? `/${hi}` : `/${hi} to /${lo}`); }
-    if (ones) parts.push(ones === 1 ? 'one 1/1' : `${ones} 1/1s`);
-    if (excs) parts.push(`${excs} custom print run${excs === 1 ? '' : 's'}`);
-    return parts.join(' · ');
+      <span class="who"><strong>${esc(c.name)}</strong><small>${esc(sub)}</small></span>
+      <span class="tags"><span class="badge pcount" role="img" aria-label="${n} parallel${n === 1 ? '' : 's'}">${n}${PARALLEL_GLYPH}</span></span></button>${body}</div>`;
   }
   function slotContext(c, p) {
     const by = S.groupBy[S.tab], card = c.sub.Subset + ' #' + c.Card_Number;
