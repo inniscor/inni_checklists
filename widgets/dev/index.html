@@ -216,6 +216,9 @@
   async function loadAll() {
     const [sub, prod, cards, pars, exc, pulls, plyr] = await Promise.all(
       ['Subsets', 'Products', 'Cards', 'Parallels', 'PrintRunExceptions', 'Pulls', 'Players'].map((t) => source.fetch(t)));
+    // Teams is optional: a doc without it (or a team without a Tint) just shows no team shading.
+    D.teamTint = new Map();
+    try { for (const t of rows(await source.fetch('Teams'))) if (t.Team && t.Tint) D.teamTint.set(String(t.Team).trim(), String(t.Tint).trim()); } catch (e) {}
     // Cards.Players is a reference list to Players; names live in Players.Player_Name.
     const playerName = new Map(rows(plyr).map((p) => [p.id, String(p.Player_Name ?? '').trim()]));
     D.subsets = rows(sub); D.products = rows(prod); D.cards = rows(cards); D.parallels = rows(pars); D.exc = rows(exc);
@@ -415,7 +418,18 @@
     btn.dataset.action = anyClosed ? 'expand' : 'collapse';
     btn.textContent = anyClosed ? 'Expand all' : 'Collapse all';
   }
-  const ghead = (g, open, meta, bar) => `<button class="ghead" data-gkey="${esc(g.key)}" aria-expanded="${open}"><span class="chev">▶</span><span class="gname">${esc(g.name)}</span><span class="gmeta">${meta}</span>${bar || ''}</button>`;
+  // ---------- team shading ----------
+  // Rows are tinted by their card's team when grouped by subset or player. Grouped by team, the header carries the
+  // tint and rows stay plain. A card with several teams blends from its first team to its last (two colors at most).
+  function teamShade(teamText) {
+    const tints = [...new Set(String(teamText || '').split(' / ').map((t) => t.trim()))].map((t) => D.teamTint.get(t)).filter(Boolean);
+    if (!tints.length) return '';
+    const a = tints[0], b = tints[tints.length - 1];
+    return a === b ? `background:${a};` : `background:linear-gradient(90deg, ${a}, ${b});`;
+  }
+  const rowShade = (c) => S.groupBy[S.tab] === 'team' ? '' : teamShade(c.Team);
+  const headShade = (g) => S.groupBy[S.tab] === 'team' ? teamShade(g.name) : '';
+  const ghead = (g, open, meta, bar) => `<button class="ghead" data-gkey="${esc(g.key)}" aria-expanded="${open}" style="${headShade(g)}"><span class="chev">▶</span><span class="gname">${esc(g.name)}</span><span class="gmeta">${meta}</span>${bar || ''}</button>`;
   const progress = (got, total) => `<span class="bar"><i style="width:${total ? Math.round(100 * got / total) : 0}%"></i></span>`;
 
   function renderChecklist() {
@@ -451,7 +465,7 @@
     const sub = detail + (excs ? ` · ${excs} custom print run${excs === 1 ? '' : 's'}` : '');
     const body = open ? `<div class="pars">` + pars.map((x) => x.run === 1 && !x.na ? oneChip(c, x) :
       `<span class="${x.na ? 'par na' : x.exc ? 'par exc' : 'par'}">${esc(x.label)}</span>`).join('') + `</div>` : '';
-    return `<div class="card"><button data-card="${c.id}" aria-expanded="${open}">
+    return `<div class="card" style="${rowShade(c)}"><button data-card="${c.id}" aria-expanded="${open}">
       <span class="chev" aria-hidden="true">▶</span>
       <span class="num">#${c.Card_Number}</span>
       <span class="who"><strong>${esc(title)}</strong><small>${esc(sub)}</small></span>
@@ -483,7 +497,7 @@
   const canEdit = () => inGrist || !!demo;
   function slotRow(c, p) {
     const pull = pullOf(c, p);
-    return `<div class="slab" data-slotrow="${c.id}:${p.id}">
+    return `<div class="slab" data-slotrow="${c.id}:${p.id}" style="${rowShade(c)}">
       <button class="stamp" data-slot="${c.id}:${p.id}" aria-pressed="${!!pull}" aria-label="${pull ? 'Mark not pulled' : 'Mark pulled'}: ${esc(c.name)} ${esc(p.Parallel)}" ${canEdit() ? '' : 'disabled'}><span class="t">${pull ? '✓ Pulled' : '1/1'}</span></button>
       <span class="who"><strong>${esc(c.name)}</strong><small>${esc(slotContext(c, p))}</small></span>
       ${pull && D.hasOffMarket ? offMarketToggle(pull, c, p) : ''}
