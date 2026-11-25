@@ -98,10 +98,13 @@
   .par { font-size: 13px; padding: 2px 8px; border-radius: 4px; background: var(--bg); }
   .par.exc { background: transparent; border: 1px solid var(--ink); }
   .par.na { text-decoration: line-through; color: var(--muted); }
-  .par.one { background: var(--slab); color: #fff; border: 0; font: inherit; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
+  /* 1/1 chips mirror the 1/1s tab: live = dark with the stamp's rainbow ring, pulled = green with a check */
+  .par.one { position: relative; background: var(--slab); color: #fff; border: 0; font: inherit; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
+  .par.one::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1.5px; background: conic-gradient(from 210deg, #7FE3D4, #B4A2F5, #F5B3C8, #F3E39A, #7FE3D4); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none; }
   .par.one:hover { outline: 2px solid var(--focus); outline-offset: 1px; }
-  .par.one .st { font-size: 11px; opacity: .8; }
   .par.one.got { background: var(--pitch); }
+  .par.one.got::before { display: none; }
+  .par.one svg { width: 12px; height: 12px; display: block; }
   @keyframes flash { from { background: var(--pitch-soft); } to { background: transparent; } }
   .slab.flash { animation: flash 2.4s ease-out; }
 
@@ -430,11 +433,12 @@
   // Row: chevron, number, player (or card name) with what the grouping doesn't show beneath (subset, or team when
   // grouped by subset) plus any custom print runs. The pill counts the card's parallels. Clicking the row lists them.
   const PARALLEL_GLYPH = '<svg class="pglyph" viewBox="0 0 16 16" aria-hidden="true"><rect x="5" y="1.5" width="9" height="12" rx="1.6" fill="none" stroke="url(#rainbow)" stroke-width="1.4"/><rect x="2" y="3.5" width="9" height="11" rx="1.6" fill="url(#rainbow)"/></svg>';
+  const CHECK_GLYPH = '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.2 6.3 4.8 8.8 9.8 3.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   // A 1/1 in an expanded card shows whether it's been pulled and opens the 1/1s tab narrowed to this card.
   function oneChip(c, x) {
     const got = !!pullOf(c, x.p);
     return `<button class="par one${got ? ' got' : ''}" data-one="${c.id}:${x.p.id}" title="Show in the 1/1s tab" aria-label="${esc(x.label)}, ${got ? 'pulled' : 'not pulled yet'}. Show in the 1/1s tab">` +
-      `${esc(x.label)}<span class="st" aria-hidden="true">${got ? '✓ Pulled' : 'Live'}</span></button>`;
+      `${esc(x.label)}${got ? CHECK_GLYPH : ''}</button>`;
   }
   function cardRow(c) {
     const open = S.cardsOpen.has(c.id);
