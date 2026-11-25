@@ -141,11 +141,15 @@ def dump(path):
             if col["formula"]:
                 entry["formula"] = col["formula"].replace("\r\n", "\n")
             if kind == "trigger":
+                # Grist RecalcWhen: 0 = new records, plus changes to recalcDeps if any;
+                # 1 = never; 2 = new records and any manual change to the row.
                 deps = parse_json(col["recalcDeps"])
-                entry["recalc"] = {
-                    "when": {0: "new_and_changes", 1: "new_only", 2: "manual"}.get(col["recalcWhen"], col["recalcWhen"]),
-                    "deps": [cols_by_id[d]["colId"] for d in deps[1:]] if isinstance(deps, list) else deps,
-                }
+                dep_ids = [cols_by_id[d]["colId"] for d in deps[1:]] if isinstance(deps, list) else []
+                when = col["recalcWhen"]
+                if when == 0:
+                    entry["recalc"] = {"when": "new_records_and_changes_to", "columns": dep_ids} if dep_ids else {"when": "new_records"}
+                else:
+                    entry["recalc"] = {"when": {1: "never", 2: "new_records_and_any_change"}.get(when, when)}
             if col["visibleCol"]:
                 entry["show_column"] = cols_by_id[col["visibleCol"]]["colId"]
             if col["description"]:
