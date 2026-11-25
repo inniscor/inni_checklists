@@ -9,6 +9,7 @@ All changes to the checklist widget, newest first. **Unreleased** describes what
 - Player suggestions appear in a dropdown under the search box (arrow keys and Enter work) instead of a row of pills. Typing still filters the list.
 - Groups start closed and open or close only when clicked or with Expand all. Filter changes no longer open or close them.
 - Card rows show a chevron. The pill on the right shows the number of parallels with a rainbow stacked-cards icon; the subset (or team, when grouped by subset) and any custom print runs move under the player name. Click a row to list every parallel.
+- In an expanded card row, each 1/1 shows whether it's been pulled (green with ✓) or is still live. Clicking it opens the 1/1s tab narrowed to that card and highlights the slot.
 
 ## v2 — 2026-11-25
 

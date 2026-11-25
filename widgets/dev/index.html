@@ -98,7 +98,12 @@
   .par { font-size: 13px; padding: 2px 8px; border-radius: 4px; background: var(--bg); }
   .par.exc { background: transparent; border: 1px solid var(--ink); }
   .par.na { text-decoration: line-through; color: var(--muted); }
-  .par.one { background: var(--slab); color: #fff; }
+  .par.one { background: var(--slab); color: #fff; border: 0; font: inherit; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
+  .par.one:hover { outline: 2px solid var(--focus); outline-offset: 1px; }
+  .par.one .st { font-size: 11px; opacity: .8; }
+  .par.one.got { background: var(--pitch); }
+  @keyframes flash { from { background: var(--pitch-soft); } to { background: transparent; } }
+  .slab.flash { animation: flash 2.4s ease-out; }
 
   /* 1/1 slab rows: the one bold element */
   .slab { border-top: 1px solid var(--line); padding: 8px 12px; display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; align-items: center; }
@@ -269,8 +274,8 @@
   function cardParallels(c) {
     return (D.parsBySubset.get(c.Subset) || []).filter(parInProduct).map((p) => {
       const e = D.excByKey.get(c.id + ':' + p.id);
-      if (e) return { label: e.Label || p.Parallel, run: e.Not_Available ? null : e.Print_Run, na: !!e.Not_Available, exc: true };
-      return { label: p.Parallel + (p.Print_Run ? ' /' + p.Print_Run : ''), run: p.Print_Run, na: false, exc: false };
+      if (e) return { p, label: e.Label || p.Parallel, run: e.Not_Available ? null : e.Print_Run, na: !!e.Not_Available, exc: true };
+      return { p, label: p.Parallel + (p.Print_Run ? ' /' + p.Print_Run : ''), run: p.Print_Run, na: false, exc: false };
     });
   }
 
@@ -425,6 +430,12 @@
   // Row: chevron, number, player (or card name) with what the grouping doesn't show beneath (subset, or team when
   // grouped by subset) plus any custom print runs. The pill counts the card's parallels. Clicking the row lists them.
   const PARALLEL_GLYPH = '<svg class="pglyph" viewBox="0 0 16 16" aria-hidden="true"><rect x="5" y="1.5" width="9" height="12" rx="1.6" fill="none" stroke="url(#rainbow)" stroke-width="1.4"/><rect x="2" y="3.5" width="9" height="11" rx="1.6" fill="url(#rainbow)"/></svg>';
+  // A 1/1 in an expanded card shows whether it's been pulled and opens the 1/1s tab narrowed to this card.
+  function oneChip(c, x) {
+    const got = !!pullOf(c, x.p);
+    return `<button class="par one${got ? ' got' : ''}" data-one="${c.id}:${x.p.id}" title="Show in the 1/1s tab" aria-label="${esc(x.label)}, ${got ? 'pulled' : 'not pulled yet'}. Show in the 1/1s tab">` +
+      `${esc(x.label)}<span class="st" aria-hidden="true">${got ? '✓ Pulled' : 'Live'}</span></button>`;
+  }
   function cardRow(c) {
     const open = S.cardsOpen.has(c.id);
     const by = S.groupBy[S.tab];
@@ -433,8 +444,8 @@
     const n = pars.filter((x) => !x.na && !/^base$/i.test(x.label)).length; // the unnumbered Base entry isn't a parallel
     const excs = pars.filter((x) => x.exc).length;
     const sub = where + (excs ? ` · ${excs} custom print run${excs === 1 ? '' : 's'}` : '');
-    const body = open ? `<div class="pars">` + pars.map((x) =>
-      `<span class="${x.na ? 'par na' : x.run === 1 ? 'par one' : x.exc ? 'par exc' : 'par'}">${esc(x.label)}</span>`).join('') + `</div>` : '';
+    const body = open ? `<div class="pars">` + pars.map((x) => x.run === 1 && !x.na ? oneChip(c, x) :
+      `<span class="${x.na ? 'par na' : x.exc ? 'par exc' : 'par'}">${esc(x.label)}</span>`).join('') + `</div>` : '';
     return `<div class="card"><button data-card="${c.id}" aria-expanded="${open}">
       <span class="chev" aria-hidden="true">▶</span>
       <span class="num">#${c.Card_Number}</span>
@@ -467,7 +478,7 @@
   const canEdit = () => inGrist || !!demo;
   function slotRow(c, p) {
     const pull = pullOf(c, p);
-    return `<div class="slab">
+    return `<div class="slab" data-slotrow="${c.id}:${p.id}">
       <button class="stamp" data-slot="${c.id}:${p.id}" aria-pressed="${!!pull}" aria-label="${pull ? 'Mark not pulled' : 'Mark pulled'}: ${esc(c.name)} ${esc(p.Parallel)}" ${canEdit() ? '' : 'disabled'}><span class="t">${pull ? '✓ Pulled' : '1/1'}</span></button>
       <span class="who"><strong>${esc(c.name)}</strong><small>${esc(slotContext(c, p))}</small></span>
       ${pull && D.hasOffMarket ? offMarketToggle(pull, c, p) : ''}
@@ -487,8 +498,24 @@
     if (st) { togglePull(st.dataset.slot); return; }
     const om = e.target.closest('[data-offm]');
     if (om) { toggleOffMarket(+om.dataset.offm); return; }
+    const one = e.target.closest('[data-one]');
+    if (one) { showOneOfOne(one.dataset.one); return; }
     const cb = e.target.closest('[data-card]');
     if (cb) { const id = +cb.dataset.card; S.cardsOpen.has(id) ? S.cardsOpen.delete(id) : S.cardsOpen.add(id); render(); }
+  }
+  // Jump to the 1/1s tab with only this card showing (its subset and players), open its group, and point at the slot.
+  function showOneOfOne(key) {
+    const [cid] = key.split(':').map(Number);
+    const c = D.cards.find((x) => x.id === cid); if (!c) return;
+    Object.values(S.f).forEach((set) => set.clear());
+    S.f.subset.add(String(c.Subset));
+    S.players = new Set(c.playerNames);
+    S.q = ''; $('#q').value = '';
+    S.tab = 'ones'; store.set('tab', S.tab);
+    for (const [k] of groupsOf[S.groupBy.ones](c)) S.taps.ones.set(k, true);
+    render();
+    const row = document.querySelector(`[data-slotrow="${key}"]`);
+    if (row) { row.scrollIntoView({ block: 'center' }); row.classList.add('flash'); row.querySelector('.stamp')?.focus({ preventScroll: true }); }
   }
   async function toggleOffMarket(pullId) {
     const pull = [...D.pulls.values()].find((p) => p.id === pullId);
