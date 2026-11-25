@@ -15,6 +15,48 @@
         "id": "Format",
         "type": "Text",
         "kind": "data"
+      },
+      {
+        "id": "Cards_Per_Pack",
+        "type": "Int",
+        "kind": "data",
+        "label": "Cards Per Pack",
+        "description": "Cards in one pack. Leave blank if unknown."
+      },
+      {
+        "id": "Packs_Per_Box",
+        "type": "Int",
+        "kind": "data",
+        "label": "Packs Per Box",
+        "description": "Packs in one box. Leave blank if unknown."
+      },
+      {
+        "id": "Boxes_Per_Case",
+        "type": "Int",
+        "kind": "data",
+        "label": "Boxes Per Case",
+        "description": "Boxes in one case. Leave blank if unknown."
+      },
+      {
+        "id": "Autos_Per_Box",
+        "type": "Int",
+        "kind": "data",
+        "label": "Autos Per Box",
+        "description": "Autographs guaranteed per box, as advertised. Leave blank if not stated."
+      },
+      {
+        "id": "Numbered_Per_Box",
+        "type": "Int",
+        "kind": "data",
+        "label": "Numbered Per Box",
+        "description": "Numbered cards guaranteed per box, as advertised. Leave blank if not stated."
+      },
+      {
+        "id": "Config_Source",
+        "type": "Text",
+        "kind": "data",
+        "label": "Config Source",
+        "description": "Where the box configuration came from, e.g. a sell sheet or product page link."
       }
     ],
     "Subsets": [
@@ -268,6 +310,33 @@
         "type": "Text",
         "kind": "data",
         "label": "Forever Home"
+      },
+      {
+        "id": "Off_Market",
+        "type": "Bool",
+        "kind": "data",
+        "label": "Off Market",
+        "description": "Checked when the owner has said the card is not for sale.",
+        "widget_options": {
+          "widget": "CheckBox"
+        }
+      },
+      {
+        "id": "Reported_At",
+        "type": "DateTime:America/Los_Angeles",
+        "kind": "trigger",
+        "label": "Reported At",
+        "formula": "NOW()",
+        "recalc": {
+          "when": "new_records"
+        },
+        "description": "Filled in automatically when the pull is logged. Blank for pulls logged before this column existed.",
+        "widget_options": {
+          "dateFormat": "YYYY-MM-DD",
+          "isCustomDateFormat": false,
+          "timeFormat": "HH:mm",
+          "isCustomTimeFormat": false
+        }
       }
     ],
     "Players": [
@@ -355,6 +424,13 @@
     {
       "table": "Pulls",
       "columns": "*",
+      "condition": "user.Access != OWNER and newRec.Forever_Home",
+      "permissions": "-C",
+      "memo": "Forever Home text is no longer accepted. Use the Off market toggle instead."
+    },
+    {
+      "table": "Pulls",
+      "columns": "*",
       "condition": "user.Access in [EDITOR, OWNER]",
       "permissions": "+CRUD"
     },
@@ -363,6 +439,13 @@
       "columns": "Value",
       "condition": "user.Access != OWNER",
       "permissions": "-RU"
+    },
+    {
+      "table": "Pulls",
+      "columns": "Card_Key,Parallel_Key,Reported_At,Forever_Home",
+      "condition": "user.Access != OWNER",
+      "permissions": "-U",
+      "memo": "A logged pull can't be changed. To fix a mistake, mark it not pulled and log it again."
     }
   ],
   "pages": [
