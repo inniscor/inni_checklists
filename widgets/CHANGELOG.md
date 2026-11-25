@@ -4,7 +4,11 @@ All changes to the checklist widget, newest first. **Unreleased** describes what
 
 ## Unreleased
 
-_Nothing yet._
+### Changed
+- Filters moved into a panel behind a **Filters** button, with every option visible once it's open. Active filters and pinned players show as removable chips next to the button.
+- Player suggestions appear in a dropdown under the search box (arrow keys and Enter work) instead of a row of pills. Typing still filters the list.
+- Groups start closed and open or close only when clicked or with Expand all. Filter changes no longer open or close them.
+- Card rows show a chevron and a parallel summary (count, numbered range, 1/1s, custom print runs). Click a row to list every parallel.
 
 ## v2 — 2026-11-25
 
