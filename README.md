@@ -14,9 +14,13 @@ The site is published by the **Publish site** GitHub Actions workflow on every p
 Widget URL pattern: `https://inniscor.github.io/inni_checklists/widgets/<folder>/`
 
 ### Releasing
-1. Test the change in `widgets/dev/` against the sandbox doc.
-2. Copy `widgets/dev/` to the next numbered folder (e.g. `widgets/v2/`). You can commit it ahead of time; it isn't live until step 3.
-3. Change `widgets/LATEST` to the new version (e.g. `v2`) and push. Every doc on `latest/` picks it up; pinned docs don't change.
+1. Test the change in `widgets/dev/` against the sandbox doc, and note it under **Unreleased** in `widgets/dev/CHANGELOG.md`.
+2. In `widgets/dev/CHANGELOG.md`, rename **Unreleased** to the new version and date (e.g. `## v2 — 2026-12-01`).
+3. Copy `widgets/dev/` to the next numbered folder (e.g. `widgets/v2/`), changelog included. You can commit it ahead of time; it isn't live until step 5.
+4. Add a fresh empty **Unreleased** section to `widgets/dev/CHANGELOG.md`.
+5. Change `widgets/LATEST` to the new version (e.g. `v2`) and push. Every doc on `latest/` picks it up; pinned docs don't change.
+
+Each released folder's `CHANGELOG.md` covers that version and everything before it. `widgets/latest/CHANGELOG.md` always describes what the live docs run.
 
 ### Pinning a doc
 Set the doc's custom widget URL to a numbered folder instead of `latest/`.
