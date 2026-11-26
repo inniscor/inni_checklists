@@ -45,7 +45,7 @@ Change `widgets/LATEST` back to the previous version and push, or pin the affect
 
 ## Set list
 
-`sets.json` (at the site root) lists the checklists the widget's set switcher links to, grouped by year (`"years": [{ "year": "2026", "sets": [...] }]`). Each set has a `name`, an optional `sub` line, the Grist `doc` ID (used to mark the set you're in) and a `url`. Leave out `url` (and `doc`) for a set that isn't ready yet, such as a "Coming Soon..." entry: it's listed dimmed and can't be clicked. Add the link once the doc is ready. Add `"featured": true` to show a set in the **Featured** section at the top of the menu as well as under its year; only the first three featured sets in the file are shown. The menu opens with Featured expanded and the years collapsed, and only one section is open at a time. Point `url` at the doc's Checklist page with `?style=singlePage` so it opens without Grist's side panel and header. Adding a set is a one-line change here; no doc or widget change is needed. Widgets from v1 to v3 don't read it.
+`sets.json` (at the site root) lists the checklists the widget's set switcher links to, grouped by year (`"years": [{ "year": "2026", "sets": [...] }]`). Each set has an `order` number, a `name`, an optional `sub` line, the Grist `doc` ID (used to mark the set you're in) and a `url`. Each year lists its sets by `order`, lowest first. Featured lists them highest first. Number sets in steps of 10 (10, 20, 30…) so a new set can slot in between without renumbering the rest. Sets without an `order` go last. Keep the file in ascending order too, since widgets before v5 list sets in file order (Featured included). Leave out `url` (and `doc`) for a set that isn't ready yet, such as a "Coming Soon..." entry: it's listed dimmed and can't be clicked. Add the link once the doc is ready. Add `"featured": true` to show a set in the **Featured** section at the top of the menu as well as under its year; if more than three are marked, the three with the highest `order` are shown. The menu opens with Featured expanded and the years collapsed, and only one section is open at a time. Point `url` at the doc's Checklist page with `?style=singlePage` so it opens without Grist's side panel and header. Adding a set is a one-line change here; no doc or widget change is needed. Widgets from v1 to v3 don't read it.
 
 `sets.json` isn't versioned: a change to it reaches every doc on v4 or later as soon as the site republishes, without a widget release.
 
@@ -54,7 +54,7 @@ Change `widgets/LATEST` back to the previous version and push, or pin the affect
 2. Fill in **Teams**: one row per team exactly as written in `Cards.Team`, with its hex `Color`.
 3. Open the Checklist page and check that the custom widget has **Full document access** and loads.
 4. Share it the same way as the other set docs, and take its Checklist page link with `?style=singlePage` added.
-5. Add the set to `sets.json` under its year (name, sub line, doc ID, that link). Mark it `"featured": true` if it should be one of the three at the top, and unmark another if three are already featured.
+5. Add the set to `sets.json` under its year (order, name, sub line, doc ID, that link). Mark it `"featured": true` to show it at the top; of the featured sets, only the three with the highest `order` appear there.
 
 ## Schema
 
