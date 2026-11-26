@@ -333,6 +333,48 @@ def test_in_grist_frame(browser):
         pg.close()
 
 
+def test_sticky_and_back_to_top(browser, w):
+    """The search box and filter chips stay in view while the tabs and the rest scroll away; Back to top returns."""
+    pg = demo_page(browser, tab="checklist", by="subset", w=w, h=420)
+    pg.click("#allgroups")  # Expand all, so the page is long enough to scroll
+    pg.wait_for_timeout(100)
+    check(f"{w}px: page is taller than the screen once expanded", pg.evaluate("document.documentElement.scrollHeight > innerHeight * 2"))
+    check(f"{w}px: footer with Back to top shows", pg.is_visible("#foot #totop"))
+    check(f"{w}px: floating button hidden at the top", not pg.evaluate("document.querySelector('#fab').classList.contains('show')"))
+    pg.evaluate("window.scrollTo(0, 600)")
+    pg.wait_for_timeout(250)
+    tops = pg.evaluate("""() => Object.fromEntries(['#toolbar', '#q', '#activebar', '.tabbar', '.summary'].map((s) =>
+      [s, document.querySelector(s).getBoundingClientRect().top]))""")
+    check(f"{w}px: toolbar pinned to the top after scrolling", abs(tops["#toolbar"]) < 1)
+    check(f"{w}px: search box and filter chips in view", 0 <= tops["#q"] < 60 and 0 <= tops["#activebar"] < 110)
+    check(f"{w}px: tabs and summary scrolled away", tops[".tabbar"] < -40 and tops[".summary"] < 0)
+    check(f"{w}px: toolbar shows its stuck shadow", pg.evaluate("document.querySelector('#toolbar').classList.contains('stuck')"))
+    check(f"{w}px: floating Back to top shows after scrolling", pg.evaluate("document.querySelector('#fab').classList.contains('show')"))
+    y_before = pg.evaluate("window.scrollY")
+    pg.click("#fbtn")
+    box = pg.evaluate("(() => { const r = document.querySelector('#filters').getBoundingClientRect(); return [r.top, r.bottom]; })()")
+    check(f"{w}px: filters panel opens in view while scrolled", 0 < box[0] < 160 and box[1] <= 420)
+    pg.click("#fbtn")
+    pg.wait_for_timeout(100)
+    check(f"{w}px: closing the filters panel leaves the list where it was", abs(pg.evaluate("window.scrollY") - y_before) < 2)
+    pg.click("#fab")
+    pg.wait_for_function("window.scrollY === 0", timeout=3000)
+    check(f"{w}px: floating button scrolls back to the top", pg.evaluate("window.scrollY") == 0)
+    pg.evaluate("window.scrollTo(0, document.documentElement.scrollHeight)")
+    pg.wait_for_timeout(250)
+    check(f"{w}px: floating button hides when the footer is in view", not pg.evaluate("document.querySelector('#fab').classList.contains('show')"))
+    pg.focus("#totop")
+    pg.keyboard.press("Enter")
+    pg.wait_for_function("window.scrollY === 0", timeout=3000)
+    check(f"{w}px: footer button by keyboard returns to the top and focuses the tab",
+          pg.evaluate("document.activeElement.matches('.tab[aria-selected=\"true\"]')"))
+    pg.click("#allgroups")  # Collapse all: the short page has no footer
+    pg.wait_for_timeout(100)
+    short = pg.evaluate("document.documentElement.scrollHeight <= innerHeight + 4")
+    check(f"{w}px: footer hidden when the page fits on screen", (not short) or pg.is_hidden("#foot"))
+    pg.close()
+
+
 def main():
     print(f"Testing {WIDGET.relative_to(ROOT)}")
     with sync_playwright() as pw:
@@ -342,7 +384,8 @@ def main():
         groups = [(f"checklist and 1/1s at {w}px", test_checklist_and_ones, (w,)) for w in (760, 390)] + [
             ("doc without Off_Market", test_without_off_market, ()),
             ("team shading and multi-team cards", test_teams, ()),
-            ("set switcher", test_set_switcher, ()),
+            ("set switcher", test_set_switcher, ())] + [
+            (f"sticky toolbar and back to top at {w}px", test_sticky_and_back_to_top, (w,)) for w in (760, 390)] + [
             ("inside a Grist frame", test_in_grist_frame, ())]
         for label, fn, args in groups:
             try:
