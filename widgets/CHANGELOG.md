@@ -4,6 +4,10 @@ All changes to the checklist widget, newest first. **Unreleased** describes what
 
 ## Unreleased
 
+Nothing yet.
+
+## v3 — 2026-11-25
+
 ### Changed
 - Design cleanup: one set of drawn icons (chevrons, close, check, download, filters) replaces text glyphs; tags use 6px corners and controls are pills; card numbers are lighter with aligned digits; print runs are emphasized in parallel chips ("Prizms Blue **/149**"); **Download CSV** is a pill with an icon; **Clear all** sits beside the filter chips.
 - 1/1 slots use the same row layout as the Checklist: team tile with the card number, the card name with "Parallel · team" (or subset) beneath, and a status pill on the right where the parallel count sits. Grouped by player, slots lead with the subset like card rows.
@@ -21,6 +25,10 @@ All changes to the checklist widget, newest first. **Unreleased** describes what
 - Card rows show a chevron after the card name. The pill on the right shows the number of parallels with a rainbow stacked-cards icon; the subset (or team, when grouped by subset) and any custom print runs move under the player name. Click a row to list every parallel.
 - When grouped by player, card rows lead with the subset and show the card name underneath.
 - In an expanded card row, each 1/1 shows whether it's live (dark with a rainbow ring), pulled (green with ✓) or off market (deep green with a lock). Clicking it opens the 1/1s tab narrowed to that card, highlights the slot and focuses its status pill.
+
+### Requires
+- Optional `Teams` table (`Team`, `Color`, calculated `Tint`, `Tint_Override`) for team shading. Without it rows aren't shaded.
+- `Pulls.Off_Market` for the **Off market** status. Without it the menu and Status filter offer only Live and Pulled.
 
 ## v2 — 2026-11-25
 
