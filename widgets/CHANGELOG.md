@@ -5,7 +5,7 @@ All changes to the checklist widget, newest first. **Unreleased** describes what
 ## Unreleased
 
 ### Added
-- Set switcher: the set's name (e.g. **Prizm Black**, "2026 Panini · NWSL") is the page title, and clicking it lists the other checklists. A set opens in the same tab on its Checklist page, with Grist's panels hidden. On phones the list opens as a bottom sheet. The menu has a **Featured** section (up to three sets marked `featured`) that opens first, and a section for each year that opens on click; only one section is open at a time. The list comes from `sets.json` at the site root, grouped by year; a doc that isn't listed shows its own name as the title (read from Grist's API), or **Checklists** if the name can't be read.
+- Set switcher: the set's name (e.g. **Prizm Black**, "2026 Panini · NWSL") is the page title, and clicking it lists the other checklists. A set opens in the same tab on its Checklist page, with Grist's panels hidden. On phones the list opens as a bottom sheet. The menu has a **Featured** section (up to three sets marked `featured`) that opens first, and a section for each year that opens on click; only one section is open at a time. A set listed without a link (e.g. "Coming Soon...") shows dimmed and can't be opened. The list comes from `sets.json` at the site root, grouped by year; a doc that isn't listed shows its own name as the title (read from Grist's API), or **Checklists** if the name can't be read.
 
 ### Requires
 - `sets.json` on the site (in the repo root). Without it the title is just the doc's name and there's no menu.

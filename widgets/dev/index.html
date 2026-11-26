@@ -142,7 +142,8 @@
   .msub { margin: 0 0 4px 12px; padding-left: 6px; border-left: 2px solid var(--line); }
   .mi.si { grid-template-columns: 1fr auto; text-decoration: none; padding: 9px 10px; }
   .mi.si b { font-family: var(--cond); font-weight: 700; font-size: 18px; } .mi.si small { font-size: 12.5px; }
-  .mi[aria-current="page"] { background: var(--bg); } .mi small { display: block; color: var(--muted); font-size: 12px; }
+  .mi[aria-current="page"] { background: var(--bg); }
+  .mi.soon { cursor: default; color: var(--muted); } .mi.soon b { font-weight: 600; } .mi.soon:hover { background: none; } .mi small { display: block; color: var(--muted); font-size: 12px; }
   .mi[aria-checked="true"] { background: var(--bg); } .mi:hover, .mi:focus-visible { background: var(--bg); outline: 2px solid var(--focus); outline-offset: -2px; }
   .mic { display: grid; place-items: center; color: #0B5A3F; } .mic .ico { width: 14px; height: 14px; }
   .ldot { width: 12px; height: 12px; border-radius: 50%; background: var(--slab); box-shadow: 0 0 0 2px #B4A2F5, 0 0 0 3.5px #F5B3C8; display: block; }
@@ -707,7 +708,7 @@
       if (!docId) try { docId = await grist.docApi.getDocName(); } catch (e) {}
     }
     const years = (data && Array.isArray(data.years) ? data.years : [])
-      .map((y) => ({ key: 'y:' + y.year, title: String(y.year ?? ''), sets: (y.sets || []).filter((x) => x && x.name && x.url) }))
+      .map((y) => ({ key: 'y:' + y.year, title: String(y.year ?? ''), sets: (y.sets || []).filter((x) => x && x.name) }))
       .filter((y) => y.title && y.sets.length);
     SETS.all = years.flatMap((y) => y.sets);
     const featured = SETS.all.filter((x) => x.featured === true).slice(0, FEATURED_MAX);
@@ -733,7 +734,12 @@
   // the others, and clicking the open one closes it.
   function openSetMenu(btn) {
     const cur = SETS.current, start = SETS.sections[0] && SETS.sections[0].key === 'featured' ? 'featured' : '';
-    const setLink = (x) => `<a class="mi si" role="menuitem" href="${esc(x.url)}" target="_top"${x === cur ? ' aria-current="page"' : ''}><span><b>${esc(x.name)}</b>${x.sub ? `<small>${esc(x.sub)}</small>` : ''}</span>${x === cur ? `<span class="mic">${ICON.check}</span>` : ''}</a>`;
+    // A set without a url (e.g. "Coming Soon...") is listed but dimmed and can't be opened; it can still take focus so
+    // screen readers announce it as unavailable.
+    const setText = (x) => `<span><b>${esc(x.name)}</b>${x.sub ? `<small>${esc(x.sub)}</small>` : ''}</span>`;
+    const setLink = (x) => !x.url
+      ? `<div class="mi si soon" role="menuitem" aria-disabled="true" tabindex="-1">${setText(x)}</div>`
+      : `<a class="mi si" role="menuitem" href="${esc(x.url)}" target="_top"${x === cur ? ' aria-current="page"' : ''}>${setText(x)}${x === cur ? `<span class="mic">${ICON.check}</span>` : ''}</a>`;
     const items = SETS.sections.map((g, i) => {
       const open = g.key === start, id = `msec-${i}`;
       return `<button class="mi msec" data-sec="${esc(g.key)}" aria-expanded="${open}" aria-controls="${id}"><b>${esc(g.title)}<small>${g.sets.length} checklist${g.sets.length === 1 ? '' : 's'}</small></b><span class="chev" aria-hidden="true">${ICON.chev}</span></button>` +

@@ -156,7 +156,7 @@ def open_sections(pg):
 
 
 def visible_sets(pg):
-    return [a.inner_text().split("\n")[0] for a in pg.query_selector_all(".menu a.mi, .sheet a.mi") if a.is_visible()]
+    return [a.inner_text().split("\n")[0] for a in pg.query_selector_all(".menu .mi.si, .sheet .mi.si") if a.is_visible()]
 
 
 def test_set_switcher(browser):
@@ -188,6 +188,17 @@ def test_set_switcher(browser):
     check(f"arrow keys skip sets in closed sections {order}", "y:2026" in order and order.count("featured") == 1 and len(set(order)) == 5)
     pg.keyboard.press("Escape")
     check("Escape closes the set menu", not pg.query_selector(".menu"))
+    pg.close()
+
+    soon = {"years": [{"year": "2026", "sets": [all_sets[0], {"name": "Coming Soon...", "sub": "2026 Parkside - CONCACAF", "featured": True}]}]}
+    pg = demo_page(browser, sets=soon)
+    pg.click("#setbtn")
+    item = pg.query_selector('#msec-0 .mi.si:has-text("Coming Soon...")')
+    check("an entry without a url is listed, dimmed and not a link",
+          item and item.get_attribute("aria-disabled") == "true" and item.evaluate("n => n.tagName") == "DIV" and not item.query_selector("a"))
+    url = pg.url
+    item.click(force=True)  # Playwright waits for aria-disabled items to become enabled; a real click still lands
+    check("clicking an entry without a url does nothing", pg.query_selector(".menu") and pg.url == url)
     pg.close()
 
     pg = demo_page(browser, w=390, h=760)
