@@ -126,7 +126,18 @@
   .sh { padding: 2px 4px 10px; } .sh strong { display: block; font-size: 16px; } .sh small { color: var(--muted); font-size: 13px; }
   .mi { width: 100%; border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; display: grid; grid-template-columns: 24px 1fr auto; gap: 10px; align-items: center; border-radius: 8px; padding: 7px 8px; font-size: 14px; }
   .sheet .mi { padding: 12px 10px; font-size: 16px; }
-  .mi b { font-weight: 600; } .mi small { display: block; color: var(--muted); font-size: 12px; }
+  .mi b { font-weight: 600; }
+  /* Set switcher: the set's name as the page title; with other sets listed it opens a menu of them. */
+  .sethead { padding: 12px 2px 0; }
+  .setbtn { display: inline-flex; align-items: center; gap: 6px; margin: 0 0 0 -4px; border: 0; background: none; padding: 2px 4px; border-radius: 8px; font-family: var(--cond); font-weight: 700; font-size: 24px; line-height: 1.15; color: var(--ink); }
+  button.setbtn { cursor: pointer; } button.setbtn:hover { background: var(--surface); }
+  .setbtn .car { display: inline-grid; color: var(--muted); } .setbtn .car .ico { width: 16px; height: 16px; }
+  .setsub { color: var(--muted); font-size: 13px; padding: 0 2px; }
+  .menu.setmenu { width: 300px; }
+  .mhd { font-size: 12px; color: var(--muted); padding: 6px 10px 4px; text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
+  .mi.si { grid-template-columns: 1fr auto; text-decoration: none; padding: 9px 10px; }
+  .mi.si b { font-family: var(--cond); font-weight: 700; font-size: 18px; } .mi.si small { font-size: 12.5px; }
+  .mi[aria-current="page"] { background: var(--bg); } .mi small { display: block; color: var(--muted); font-size: 12px; }
   .mi[aria-checked="true"] { background: var(--bg); } .mi:hover, .mi:focus-visible { background: var(--bg); outline: 2px solid var(--focus); outline-offset: -2px; }
   .mic { display: grid; place-items: center; color: #0B5A3F; } .mic .ico { width: 14px; height: 14px; }
   .ldot { width: 12px; height: 12px; border-radius: 50%; background: var(--slab); box-shadow: 0 0 0 2px #B4A2F5, 0 0 0 3.5px #F5B3C8; display: block; }
@@ -179,6 +190,7 @@
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><linearGradient id="rainbow" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF5E7E"/><stop offset=".25" stop-color="#FFB547"/><stop offset=".5" stop-color="#5EE6A8"/><stop offset=".75" stop-color="#5AB8FF"/><stop offset="1" stop-color="#B07CFF"/></linearGradient></defs></svg>
 <div class="wrap">
+  <header class="sethead" id="sethead" hidden></header>
   <div class="tabbar">
     <div class="tabs" role="tablist">
       <button class="tab" role="tab" data-tab="checklist">Checklist<span class="n" id="n-checklist"></span></button>
@@ -428,7 +440,7 @@
 
   // ---------- rendering ----------
   function render() {
-    closeStatusMenu();
+    closeMenu();
     document.querySelectorAll('.tab').forEach((b) => b.setAttribute('aria-selected', b.dataset.tab === S.tab));
     renderFilters(); renderViewbar(); renderSuggest();
     $('#n-ones').textContent = `${D.pulls.size}/${D.totalOnes}`;
@@ -583,68 +595,122 @@
     const row = document.querySelector(`[data-slotrow="${key}"]`);
     if (row) { row.scrollIntoView({ block: 'center' }); row.classList.add('flash'); row.querySelector('.par.status')?.focus({ preventScroll: true }); }
   }
-  // ---------- status menu ----------
-  // Desktop: a dropdown under the pill. Phones: a bottom sheet; tapping a choice applies it.
+  // ---------- menus ----------
+  // One popup for the status menu and the set switcher: a dropdown under its button on wider screens, a bottom sheet
+  // on phones (tapping a choice applies it). Items are .mi elements; arrow keys move between them, Escape closes.
   let menuEl = null;
-  function closeStatusMenu(refocus) {
+  function closeMenu(refocus) {
     if (!menuEl) return;
-    const { pill, nodes } = menuEl; menuEl = null;
+    const { anchor, nodes } = menuEl; menuEl = null;
     nodes.forEach((n) => n.remove());
     document.removeEventListener('keydown', onMenuKey, true);
     document.removeEventListener('pointerdown', onMenuOutside, true);
     window.removeEventListener('scroll', onMenuScroll, true);
     window.removeEventListener('resize', onMenuScroll);
-    if (pill.isConnected) { pill.setAttribute('aria-expanded', 'false'); if (refocus) pill.focus(); }
+    if (anchor.isConnected) { anchor.setAttribute('aria-expanded', 'false'); if (refocus) anchor.focus(); }
   }
+  // Opens a menu for `anchor` (or closes it if it's already open). `align` is where the dropdown lines up with the
+  // anchor: 'right' (status pill) or 'left' (set title). Returns the menu box, or null when it just closed.
+  function openMenu(anchor, { label, items, sheetHead = '', align = 'right', cls = '' }) {
+    const reopen = menuEl && menuEl.anchor === anchor;
+    closeMenu();
+    if (reopen) return null;
+    const nodes = [];
+    if (matchMedia('(max-width: 600px)').matches) {
+      const scrim = document.createElement('div'); scrim.className = 'scrim'; scrim.onclick = () => closeMenu(true);
+      const sheet = document.createElement('div'); sheet.className = `sheet ${cls}`; sheet.setAttribute('role', 'menu'); sheet.setAttribute('aria-label', label);
+      sheet.innerHTML = `<div class="grab"></div>${sheetHead}${items}`;
+      nodes.push(scrim, sheet);
+    } else {
+      const m = document.createElement('div'); m.className = `menu ${cls}`; m.setAttribute('role', 'menu'); m.setAttribute('aria-label', label); m.innerHTML = items;
+      nodes.push(m);
+    }
+    nodes.forEach((n) => document.body.appendChild(n));
+    const box = nodes[nodes.length - 1];
+    if (box.classList.contains('menu')) {
+      const r = anchor.getBoundingClientRect(), h = box.offsetHeight, w = box.offsetWidth;
+      const below = r.bottom + 6 + h <= window.innerHeight || r.top - 6 - h < 0;
+      box.style.top = (below ? r.bottom + 6 : r.top - 6 - h) + 'px';
+      box.style.left = Math.max(8, Math.min(align === 'left' ? r.left : r.right - w, window.innerWidth - w - 8)) + 'px';
+    }
+    menuEl = { anchor, nodes, box };
+    anchor.setAttribute('aria-expanded', 'true');
+    document.addEventListener('keydown', onMenuKey, true);
+    document.addEventListener('pointerdown', onMenuOutside, true);
+    window.addEventListener('scroll', onMenuScroll, true);
+    window.addEventListener('resize', onMenuScroll);
+    (box.querySelector('.mi[aria-checked="true"], .mi[aria-current="page"]') || box.querySelector('.mi')).focus();
+    return box;
+  }
+  function onMenuKey(e) {
+    if (!menuEl) return;
+    const items = [...menuEl.box.querySelectorAll('.mi')], i = items.indexOf(document.activeElement);
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeMenu(true); }
+    else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); items[(i + (e.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length].focus(); }
+    else if (e.key === 'Home' || e.key === 'End') { e.preventDefault(); items[e.key === 'Home' ? 0 : items.length - 1].focus(); }
+    else if (e.key === 'Tab') closeMenu();
+  }
+  // A tap outside closes the menu; a tap on its own button is left to that button's click handler (which closes it).
+  // On phones the scrim catches the tap (and closes the sheet on click) so it doesn't fall through to the row beneath.
+  function onMenuOutside(e) { if (menuEl && !menuEl.box.contains(e.target) && !menuEl.anchor.contains(e.target) && !e.target.closest('.scrim')) closeMenu(); }
+  function onMenuScroll(e) { if (menuEl && !(e && e.target && e.target.nodeType === 1 && menuEl.box.contains(e.target))) closeMenu(); }
+
+  // Status menu: Live / Pulled / Off market for one 1/1.
   function openStatusMenu(pill) {
-    const reopen = menuEl && menuEl.pill === pill;
-    closeStatusMenu();
-    if (reopen || !canEdit()) return;
+    if (!canEdit()) return;
     const key = pill.dataset.status, [cid, pid] = key.split(':').map(Number);
     const c = D.cards.find((x) => x.id === cid), p = c && c.ones.find((x) => x.id === pid); if (!p) return;
     const cur = slotState(c, p);
     const dot = { live: '<span class="ldot"></span>', pulled: '<span class="gdot"></span>', off: ICON.lock };
     const items = stateKeys().map((k) => `<button class="mi" role="menuitemradio" aria-checked="${k === cur}" data-set="${k}"><span class="mic">${dot[k]}</span><span><b>${STATES[k][0]}</b><small>${STATES[k][1]}</small></span>${k === cur ? `<span class="mic">${ICON.check}</span>` : ''}</button>`).join('');
-    const label = `Status for ${esc(c.name)}, ${esc(p.Parallel)}`;
-    const nodes = [];
-    if (matchMedia('(max-width: 600px)').matches) {
-      const scrim = document.createElement('div'); scrim.className = 'scrim'; scrim.onclick = () => closeStatusMenu(true);
-      const sheet = document.createElement('div'); sheet.className = 'sheet'; sheet.setAttribute('role', 'menu'); sheet.setAttribute('aria-label', label);
-      sheet.innerHTML = `<div class="grab"></div><div class="sh"><strong>#${c.Card_Number} ${esc(c.name)}</strong><small>${esc(p.Parallel)} · ${esc(c.sub.Subset)} · ${esc(c.Team)}</small></div>${items}`;
-      nodes.push(scrim, sheet);
-    } else {
-      const m = document.createElement('div'); m.className = 'menu'; m.setAttribute('role', 'menu'); m.setAttribute('aria-label', label); m.innerHTML = items;
-      nodes.push(m);
-    }
-    nodes.forEach((n) => document.body.appendChild(n));
-    const box = nodes[nodes.length - 1];
-    if (box.className === 'menu') {
-      const r = pill.getBoundingClientRect(), h = box.offsetHeight, w = box.offsetWidth;
-      const below = r.bottom + 6 + h <= window.innerHeight || r.top - 6 - h < 0;
-      box.style.top = (below ? r.bottom + 6 : r.top - 6 - h) + 'px';
-      box.style.left = Math.max(8, Math.min(r.right - w, window.innerWidth - w - 8)) + 'px';
-    }
-    box.onclick = (e) => { const b = e.target.closest('[data-set]'); if (b) { closeStatusMenu(true); setStatus(key, b.dataset.set); } };
-    menuEl = { pill, nodes, box };
-    pill.setAttribute('aria-expanded', 'true');
-    document.addEventListener('keydown', onMenuKey, true);
-    document.addEventListener('pointerdown', onMenuOutside, true);
-    window.addEventListener('scroll', onMenuScroll, true);
-    window.addEventListener('resize', onMenuScroll);
-    (box.querySelector('[aria-checked="true"]') || box.querySelector('.mi')).focus();
+    const box = openMenu(pill, { label: `Status for ${esc(c.name)}, ${esc(p.Parallel)}`, items,
+      sheetHead: `<div class="sh"><strong>#${c.Card_Number} ${esc(c.name)}</strong><small>${esc(p.Parallel)} · ${esc(c.sub.Subset)} · ${esc(c.Team)}</small></div>` });
+    if (box) box.onclick = (e) => { const b = e.target.closest('[data-set]'); if (b) { closeMenu(true); setStatus(key, b.dataset.set); } };
   }
-  function onMenuKey(e) {
-    if (!menuEl) return;
-    const items = [...menuEl.box.querySelectorAll('.mi')], i = items.indexOf(document.activeElement);
-    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeStatusMenu(true); }
-    else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); items[(i + (e.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length].focus(); }
-    else if (e.key === 'Home' || e.key === 'End') { e.preventDefault(); items[e.key === 'Home' ? 0 : items.length - 1].focus(); }
-    else if (e.key === 'Tab') closeStatusMenu();
+
+  // ---------- set switcher ----------
+  // The set list lives in sets.json at the root of the GitHub Pages site (two folders up from widgets/<version>/), so
+  // adding a set is a one-line change there. The widget asks Grist for this doc's ID to mark the current set; a doc
+  // that isn't listed (the sandbox, a new set) shows its own name as the title, and the menu still lists the sets.
+  // Links open the other doc's Checklist page in the same tab, with Grist's panels hidden (style=singlePage).
+  const SETS = { groups: [], current: null, docName: '' };
+  async function loadSets() {
+    let data = null, docId = '', docName = '';
+    try {
+      if (demo) data = window.DEMO_SETS || null;
+      else { const r = await fetch(new URL('../../sets.json', location.href)); if (r.ok) data = await r.json(); }
+    } catch (e) {}
+    if (demo) { docId = window.DEMO_DOC_ID || ''; docName = window.DEMO_DOC_NAME || ''; }
+    else if (inGrist) {
+      try { const t = await grist.docApi.getAccessToken({ readOnly: true }); docId = (/\/docs\/([^/?#]+)/.exec(t.baseUrl || '') || [])[1] || ''; } catch (e) {}
+      try { docName = await grist.docApi.getDocName(); } catch (e) {}
+    }
+    SETS.groups = (data && Array.isArray(data.groups) ? data.groups : []).map((g) => ({ title: String(g.title || ''), sets: (g.sets || []).filter((x) => x && x.name && x.url) })).filter((g) => g.sets.length);
+    SETS.current = SETS.groups.flatMap((g) => g.sets).find((x) => docId && x.doc === docId) || null;
+    SETS.docName = docName;
+    renderSetHead();
   }
-  // A tap outside closes the menu; a tap on the same pill is left to the click handler (which closes it).
-  // On phones the scrim catches the tap (and closes the sheet on click) so it doesn't fall through to the row beneath.
-  function onMenuOutside(e) { if (menuEl && !menuEl.box.contains(e.target) && !menuEl.pill.contains(e.target) && !e.target.closest('.scrim')) closeStatusMenu(); }
-  function onMenuScroll(e) { if (menuEl && !(e && e.target && e.target.nodeType === 1 && menuEl.box.contains(e.target))) closeStatusMenu(); }
+  function renderSetHead() {
+    const head = $('#sethead');
+    const all = SETS.groups.flatMap((g) => g.sets), cur = SETS.current;
+    const title = cur ? cur.name : SETS.docName;
+    if (!title && !all.length) { head.hidden = true; return; }
+    const others = all.filter((x) => x !== cur).length;
+    const sub = cur ? cur.sub || '' : '';
+    head.hidden = false;
+    head.innerHTML = (others
+      ? `<button class="setbtn" id="setbtn" aria-haspopup="menu" aria-expanded="false" aria-label="${esc(title || 'Checklists')}. Switch checklist">${esc(title || 'Checklists')}<span class="car">${ICON.caret}</span></button>`
+      : `<h1 class="setbtn">${esc(title)}</h1>`) + (sub ? `<div class="setsub">${esc(sub)}</div>` : '');
+    if (others) $('#setbtn').onclick = (e) => openSetMenu(e.currentTarget);
+  }
+  function openSetMenu(btn) {
+    const cur = SETS.current;
+    const items = SETS.groups.map((g) => (g.title ? `<div class="mhd" role="presentation">${esc(g.title)}</div>` : '') + g.sets.map((x) =>
+      `<a class="mi si" role="menuitem" href="${esc(x.url)}" target="_top"${x === cur ? ' aria-current="page"' : ''}><span><b>${esc(x.name)}</b>${x.sub ? `<small>${esc(x.sub)}</small>` : ''}</span>${x === cur ? `<span class="mic">${ICON.check}</span>` : ''}</a>`).join('')).join('');
+    const box = openMenu(btn, { label: 'Checklists', items, align: 'left', cls: 'setmenu' });
+    // Picking the current set just closes the menu.
+    if (box) box.onclick = (e) => { const a = e.target.closest('a.mi'); if (a && a.hasAttribute('aria-current')) { e.preventDefault(); closeMenu(true); } };
+  }
 
   // Live removes the logged pull; Pulled and Off market log one (or flip Off_Market on the one already logged).
   async function setStatus(key, next) {
@@ -719,8 +785,9 @@
     let booted = false;
     grist.onRecords(() => { if (booted) reloadPulls(); });
     loadAll().then(() => { booted = true; }).catch((e) => empty('Could not read the document: ' + (e.message || e) + '. Give this widget full document access in its settings.'));
+    loadSets();
   } else if (demo) {
-    loadAll();
+    loadAll(); loadSets();
   } else {
     empty('This page is a Grist custom widget. Add it to a Grist page as a custom widget to use it.');
   }

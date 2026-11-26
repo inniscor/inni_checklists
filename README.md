@@ -30,6 +30,10 @@ Change `widgets/LATEST` back to the previous version and push, or pin the affect
 ### Building locally
 `bash scripts/build-site.sh` writes the site to `_site/`. It fails if `LATEST` names a missing version or if a `widgets/latest/` folder was committed.
 
+## Set list
+
+`sets.json` (at the site root) lists the checklists the widget's set switcher links to. Each set has a `name`, an optional `sub` line, the Grist `doc` ID (used to mark the set you're in) and a `url`, grouped under a `title`. Point `url` at the doc's Checklist page with `?style=singlePage` so it opens without Grist's side panel and header. Adding a set is a one-line change here; no doc or widget change is needed. Widgets from v1 to v3 don't read it.
+
 ## Schema
 
 `schema/` holds the document structure every set doc is built from:
