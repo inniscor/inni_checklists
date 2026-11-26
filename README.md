@@ -15,15 +15,16 @@ Widget URL pattern: `https://inniscor.github.io/inni_checklists/widgets/<folder>
 
 ### Making a change
 1. Work on a branch and open a pull request. The **Widget tests** workflow runs `tests/widget_test.py` on every PR that touches the widget, `sets.json` or the tests; run it locally with `python3 tests/widget_test.py` (see [Tests](#tests)).
-2. Note the change under **Unreleased** in `widgets/CHANGELOG.md`. If it needs something new in the docs (a table, a column, an access rule), list it under a **Requires** heading there too.
+2. Note the change under **Unreleased** in `widgets/CHANGELOG.md`. If it needs something new in the docs (a table, a column, an access rule), make that change in the sandbox doc and list it under a **Requires** heading in the changelog. The live docs and the template catch up at release.
 3. Merge to `main`. The site republishes `widgets/dev/`, so only the sandbox doc sees the change. GitHub Pages caches pages for about 10 minutes, so wait and reload the widget before testing in the sandbox.
 
 ### Releasing
-1. **Bring the live docs up to date first.** Check the **Requires** notes under Unreleased and make each change in every live set doc, so the new version finds what it needs the moment it goes live. (A new template only affects docs created from it; see [Schema](#schema).)
+1. **Bring the live docs up to date first.** Check the **Requires** notes under Unreleased and make each change in every live set doc, so the new version finds what it needs the moment it goes live.
 2. **Open one release PR** that:
    - copies `widgets/dev/` to the next numbered folder (e.g. `widgets/v4/`),
    - renames **Unreleased** in `widgets/CHANGELOG.md` to the version and date (e.g. `## v4 — 2026-12-01`) and adds a fresh **Unreleased** section above it,
-   - changes `widgets/LATEST` to the new version.
+   - changes `widgets/LATEST` to the new version,
+   - if the release has **Requires** notes, refreshes the template from the sandbox doc, which already has the changes (see [Updating the template](#updating-the-template)).
 
    Run `python3 tests/widget_test.py widgets/v4` against the new folder before merging.
 3. **Merge it.** Every doc on `latest/` picks up the new version; pinned docs don't change.
@@ -62,13 +63,19 @@ Change `widgets/LATEST` back to the previous version and push, or pin the affect
 - `checklist-template.grist`: an empty Grist document with every table, formula, page, access rule and the checklist widget (pointed at `widgets/latest/`). To start a new set, import it in Grist (Add New → Import Document) and fill in the data. Fill in **Teams** too (each team exactly as written in `Cards.Team`, with its hex `Color`); the widget shades rows from the calculated `Tint` and skips teams without one.
 - `schema.json`: a readable copy of the same structure, generated from the template. The template is binary, so review changes here.
 
-### Updating the schema
-1. Make the change in the sandbox doc.
-2. Download it as a template (no data) and run:
+### Changing the schema
+A schema change (a table, column, formula, page or access rule) moves through the docs in this order:
+
+1. **Sandbox, while developing.** Make the change in the sandbox doc and list it under **Requires** in `widgets/CHANGELOG.md` (see [Making a change](#making-a-change)).
+2. **Live docs, at release.** Make the same change in every live set doc before the release PR is merged ([Releasing](#releasing), step 1). The template only shapes new docs; existing docs keep their structure until they're changed by hand.
+3. **Template, in the release PR.** Refresh the template from the sandbox, as below.
+
+### Updating the template
+1. Download the sandbox doc as a template (no data) and run:
    `python3 scripts/grist_schema.py import <downloaded>.grist`
    This refuses files that contain rows, replaces any email addresses Grist stored in the document's history, points the widget at `latest/`, and regenerates `schema.json`.
-3. Commit both files. The **Schema check** workflow fails if they don't match or if the template contains an email address.
-4. Make the same change in each live set doc. The template only shapes new docs; existing docs keep their structure until they're changed by hand. If a widget release depends on the change, do this before releasing (see [Releasing](#releasing)).
+2. Review the `schema.json` diff: it should show only the changes listed under **Requires**. Anything else means the sandbox has drifted; fix the sandbox and download again.
+3. Commit both files in the release PR. The **Schema check** workflow fails if they don't match or if the template contains an email address.
 
 `python3 scripts/grist_schema.py dump <file>.grist` prints the schema of any `.grist` file, which is handy for comparing a live doc's download against the template.
 
