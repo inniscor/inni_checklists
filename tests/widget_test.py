@@ -271,6 +271,18 @@ def test_set_switcher(browser):
     pg.click("#setbtn")
     check("Featured shows at most three", len(pg.query_selector_all("#msec-0 a.mi")) == 3)
     pg.close()
+    # Order comes from the `order` numbers, not file position; sets without one go last; Featured takes the lowest three.
+    base = {k: v for k, v in all_sets[0].items() if k not in ("order", "featured")}
+    shuffled = {"years": [{"year": "2026", "sets": [
+        dict(base, name="C", doc="c", order=30, featured=True), dict(base, name="Unnumbered", doc="u", featured=True),
+        dict(base, name="A", doc="a", order=10, featured=True), dict(base, name="D", doc="d", order=40, featured=True),
+        dict(base, name="B", doc="b", order=20)]}]}
+    pg = demo_page(browser, sets=shuffled)
+    pg.click("#setbtn")
+    check("Featured lists the three lowest-numbered featured sets in order", visible_sets(pg) == ["A", "C", "D"])
+    pg.click('.menu .msec[data-sec="y:2026"]')
+    check("a year lists its sets by order, unnumbered last", visible_sets(pg) == ["A", "B", "C", "D", "Unnumbered"])
+    pg.close()
     none = {"years": [{"year": "2026", "sets": [{k: v for k, v in x.items() if k != "featured"} for x in all_sets]}, {"year": "2025", "sets": [dict(all_sets[0], name="Old set", doc="old", featured=False)]}]}
     pg = demo_page(browser, sets=none)
     pg.click("#setbtn")

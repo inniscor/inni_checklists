@@ -4,7 +4,8 @@ All changes to the checklist widget, newest first. **Unreleased** describes what
 
 ## Unreleased
 
-Nothing yet.
+### Changed
+- The set menu lists sets by their `order` number in `sets.json` (lowest first), in Featured and in each year; sets without one go last. Featured shows the three featured sets with the lowest numbers.
 
 ## v4 — 2026-11-25
 

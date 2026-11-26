@@ -688,6 +688,11 @@
   // shows its own name as the title, and the menu still lists the sets.
   // Links open the other doc's Checklist page in the same tab, with Grist's panels hidden (style=singlePage).
   const FEATURED_MAX = 3;
+  // Sets are listed by their `order` number (lowest first); sets without one follow, in file order.
+  const byOrder = (list) => list.map((x, i) => [x, i]).sort(([a, i], [b, j]) => {
+    const oa = Number.isFinite(a.order) ? a.order : Infinity, ob = Number.isFinite(b.order) ? b.order : Infinity;
+    return oa - ob || i - j;
+  }).map(([x]) => x);
   const SETS = { sections: [], all: [], current: null, docName: '' };
   async function loadSets() {
     let data = null, docId = '', docName = '';
@@ -708,10 +713,10 @@
       if (!docId) try { docId = await grist.docApi.getDocName(); } catch (e) {}
     }
     const years = (data && Array.isArray(data.years) ? data.years : [])
-      .map((y) => ({ key: 'y:' + y.year, title: String(y.year ?? ''), sets: (y.sets || []).filter((x) => x && x.name) }))
+      .map((y) => ({ key: 'y:' + y.year, title: String(y.year ?? ''), sets: byOrder((y.sets || []).filter((x) => x && x.name)) }))
       .filter((y) => y.title && y.sets.length);
     SETS.all = years.flatMap((y) => y.sets);
-    const featured = SETS.all.filter((x) => x.featured === true).slice(0, FEATURED_MAX);
+    const featured = byOrder(SETS.all.filter((x) => x.featured === true)).slice(0, FEATURED_MAX);
     SETS.sections = (featured.length ? [{ key: 'featured', title: 'Featured', sets: featured }] : []).concat(years);
     SETS.current = SETS.all.find((x) => docId && x.doc === docId) || null;
     SETS.docName = docName;

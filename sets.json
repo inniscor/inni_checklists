@@ -4,19 +4,14 @@
       "year": "2026",
       "sets": [
         {
-          "name": "Prizm Black",
-          "sub": "2026 Panini · NWSL",
-          "doc": "pCMKPajFwTiuzyVLySNiMT",
-          "url": "https://docs.getgrist.com/pCMKPajFwTiu/2026-Panini-Prizm-Black-NWSL/p/10?style=singlePage",
-          "featured": true
-        },
-        {
+          "order": 10,
           "name": "Donruss Optic",
           "sub": "2026 Panini · NWSL",
           "doc": "sYMudGfTRcz9jFs7UwhmNx",
           "url": "https://docs.getgrist.com/sYMudGfTRcz9/2026-Panini-Donruss-Optic-NWSL/p/10?style=singlePage"
         },
         {
+          "order": 20,
           "name": "Crown Royale",
           "sub": "2026 Panini · NWSL",
           "doc": "pP9URx4nq9TWEsYANMp3Yc",
@@ -24,6 +19,15 @@
           "featured": true
         },
         {
+          "order": 30,
+          "name": "Prizm Black",
+          "sub": "2026 Panini · NWSL",
+          "doc": "pCMKPajFwTiuzyVLySNiMT",
+          "url": "https://docs.getgrist.com/pCMKPajFwTiu/2026-Panini-Prizm-Black-NWSL/p/10?style=singlePage",
+          "featured": true
+        },
+        {
+          "order": 40,
           "name": "Coming Soon...",
           "sub": "2026 Parkside - CONCACAF",
           "featured": true
