@@ -45,7 +45,7 @@ Change `widgets/LATEST` back to the previous version and push, or pin the affect
 
 ## Set list
 
-`sets.json` (at the site root) lists the checklists the widget's set switcher links to. Each set has a `name`, an optional `sub` line, the Grist `doc` ID (used to mark the set you're in) and a `url`, grouped under a `title`. Point `url` at the doc's Checklist page with `?style=singlePage` so it opens without Grist's side panel and header. Adding a set is a one-line change here; no doc or widget change is needed. Widgets from v1 to v3 don't read it.
+`sets.json` (at the site root) lists the checklists the widget's set switcher links to, grouped by year (`"years": [{ "year": "2026", "sets": [...] }]`). Each set has a `name`, an optional `sub` line, the Grist `doc` ID (used to mark the set you're in) and a `url`. Add `"featured": true` to show a set in the **Featured** section at the top of the menu as well as under its year; only the first three featured sets in the file are shown. The menu opens with Featured expanded and the years collapsed, and only one section is open at a time. Point `url` at the doc's Checklist page with `?style=singlePage` so it opens without Grist's side panel and header. Adding a set is a one-line change here; no doc or widget change is needed. Widgets from v1 to v3 don't read it.
 
 `sets.json` isn't versioned: a change to it reaches every doc on v4 or later as soon as the site republishes, without a widget release.
 
@@ -54,7 +54,7 @@ Change `widgets/LATEST` back to the previous version and push, or pin the affect
 2. Fill in **Teams**: one row per team exactly as written in `Cards.Team`, with its hex `Color`.
 3. Open the Checklist page and check that the custom widget has **Full document access** and loads.
 4. Share it the same way as the other set docs, and take its Checklist page link with `?style=singlePage` added.
-5. Add the set to `sets.json` (name, sub line, doc ID, that link).
+5. Add the set to `sets.json` under its year (name, sub line, doc ID, that link). Mark it `"featured": true` if it should be one of the three at the top, and unmark another if three are already featured.
 
 ## Schema
 
