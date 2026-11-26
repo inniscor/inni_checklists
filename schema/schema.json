@@ -394,6 +394,34 @@
         "formula": "Cards.lookupRecords(Players=CONTAINS($id))",
         "show_column": "Card_Key"
       }
+    ],
+    "Teams": [
+      {
+        "id": "Team",
+        "type": "Text",
+        "kind": "data",
+        "description": "Exactly as it appears in Cards.Team."
+      },
+      {
+        "id": "Color",
+        "type": "Text",
+        "kind": "data",
+        "description": "The team's official color as a hex value, from the NWSL 2026 brand guidelines (p. 24, Clubs Colors). Chosen per club so tints stay distinct. Leave blank for no shading."
+      },
+      {
+        "id": "Tint",
+        "type": "Text",
+        "kind": "formula",
+        "formula": "# Pale, readable background that keeps the team color's hue.\n# Colors with no usable hue (black, gray, white) become a deeper neutral gray.\n# Text on the result keeps at least 7:1 contrast with the widget's ink (#14212E).\nimport colorsys\nif ($Tint_Override or \"\").strip():\n  return $Tint_Override.strip()\nh = ($Color or \"\").strip().lstrip(\"#\")\nif len(h) != 6:\n  return None\ntry:\n  r, g, b = [int(h[i:i + 2], 16) / 255.0 for i in (0, 2, 4)]\nexcept ValueError:\n  return None\nH, L, S = colorsys.rgb_to_hls(r, g, b)\nif S < 0.12 or max(r, g, b) - min(r, g, b) < 0.08:\n  S2, L2 = 0.0, 0.88\nelse:\n  S2, L2 = min(max(S, 0.45), 0.75), 0.89\ndef lum(rgb):\n  c = [v / 255.0 for v in rgb]\n  c = [v / 12.92 if v <= 0.03928 else ((v + 0.055) / 1.055) ** 2.4 for v in c]\n  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]\nink = lum((0x14, 0x21, 0x2E))\nwhile True:\n  rgb = [int(round(v * 255)) for v in colorsys.hls_to_rgb(H, L2, S2)]\n  if (lum(rgb) + 0.05) / (ink + 0.05) >= 7 or L2 >= 0.97:\n    break\n  L2 += 0.01\nreturn \"#%02X%02X%02X\" % tuple(rgb)",
+        "description": "Background shade the widget uses for this team. Calculated from Color, unless Tint Override is filled in."
+      },
+      {
+        "id": "Tint_Override",
+        "type": "Text",
+        "kind": "data",
+        "label": "Tint Override",
+        "description": "Optional hex value that replaces the calculated Tint, e.g. to separate two teams whose tints look alike."
+      }
     ]
   },
   "access_rules": [
@@ -529,6 +557,15 @@
         {
           "type": "record",
           "table": "Players"
+        }
+      ]
+    },
+    {
+      "name": "Teams",
+      "widgets": [
+        {
+          "type": "record",
+          "table": "Teams"
         }
       ]
     }
