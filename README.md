@@ -34,7 +34,7 @@ Change `widgets/LATEST` back to the previous version and push, or pin the affect
 
 `schema/` holds the document structure every set doc is built from:
 
-- `checklist-template.grist`: an empty Grist document with every table, formula, page, access rule and the checklist widget (pointed at `widgets/latest/`). To start a new set, import it in Grist (Add New → Import Document) and fill in the data.
+- `checklist-template.grist`: an empty Grist document with every table, formula, page, access rule and the checklist widget (pointed at `widgets/latest/`). To start a new set, import it in Grist (Add New → Import Document) and fill in the data. Fill in **Teams** too (each team exactly as written in `Cards.Team`, with its hex `Color`); the widget shades rows from the calculated `Tint` and skips teams without one.
 - `schema.json`: a readable copy of the same structure, generated from the template. The template is binary, so review changes here.
 
 ### Updating the schema
