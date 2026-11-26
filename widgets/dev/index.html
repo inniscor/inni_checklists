@@ -110,9 +110,12 @@
 
   /* 1/1 slab rows: the one bold element */
   .slab { border-top: 1px solid var(--line); padding: 8px 12px; display: grid; grid-template-columns: auto 1fr; gap: 4px 16px; align-items: center; }
-  /* Team block: the tint covers only the chevron/number (or stamp) area; --blkw is where that area ends. */
-  .card { --blkw: 83px; } .slab { --blkw: 106px; }
-  .card[style*="--blk"], .slab[style*="--blk"] { background: var(--blk) left top / var(--blkw) 100% no-repeat, var(--surface); }
+  /* Team tile: a rounded, inset tile in the team's tint behind the chevron/number (or the 1/1 stamp).
+     --blkw is where that area ends; the tile sits 6px inside it. */
+  .card { --blkw: 83px; } .slab { --blkw: 102px; }
+  .card, .slab { position: relative; }
+  .card > button, .card > .pars, .slab > * { position: relative; z-index: 1; }
+  .card[style*="--blk"]::before, .slab[style*="--blk"]::before { content: ""; position: absolute; z-index: 0; left: 6px; top: 6px; bottom: 6px; width: calc(var(--blkw) - 10px); border-radius: 8px; background: var(--blk); }
   @media (max-width: 600px) { .card { --blkw: 76px; } }
   .stamp { position: relative; width: 86px; height: 40px; border-radius: var(--radius-s); border: 0; cursor: pointer; font-family: var(--cond); font-weight: 700; font-size: 17px; color: #fff; background: var(--slab); overflow: hidden; white-space: nowrap; }
   .stamp::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 2px; background: conic-gradient(from 210deg, #7FE3D4, #B4A2F5, #F5B3C8, #F3E39A, #7FE3D4); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; opacity: .85; }
@@ -143,6 +146,30 @@
   .toast { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 10px 14px; border-radius: var(--radius-s); font-size: 14px; max-width: 92vw; opacity: 0; pointer-events: none; transition: opacity .2s; }
   .toast.show { opacity: 1; }
   @media (prefers-reduced-motion: reduce) { *, .chev { transition: none !important; } }
+
+  /* Icons, tags and controls: one icon set (.ico), 6px tags, pill-shaped controls. */
+  .ico { width: 12px; height: 12px; display: block; flex: none; }
+  .chev { display: inline-grid; place-items: center; color: var(--muted); }
+  .chev .ico { width: 12px; height: 12px; }
+  .group { border-radius: 12px; }
+  .badge, .par { border-radius: 6px; }
+  .par { padding: 3px 9px; }
+  .par b { font-weight: 600; }
+  .par.one .ico { width: 11px; height: 11px; }
+  .num { font-family: var(--body); font-weight: 500; font-size: 15px; font-variant-numeric: tabular-nums; color: var(--muted); }
+  .num i { font-style: normal; opacity: .5; margin-right: 1px; }
+  .chip span { background: none; width: 14px; height: 14px; }
+  .chip span .ico { width: 12px; height: 12px; }
+  .fbtn { gap: 7px; } .fbtn > .ico { width: 15px; height: 15px; }
+  #activebar #clear { margin-left: 2px; }
+  .btn.ghost { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px; font-weight: 500; font-size: 14px; }
+  .btn.ghost .ico { width: 15px; height: 15px; }
+  .btn.ghost:hover { background: var(--surface); color: var(--ink); border-color: var(--ink); }
+  .stamp { width: 82px; height: 34px; border-radius: 8px; font-size: 15px; }
+  .stamp .t { display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
+  .stamp .ico { width: 13px; height: 13px; }
+  .offm { gap: 6px; font-size: 13px; padding: 3px 10px; }
+  .offm .ico { width: 14px; height: 14px; }
 </style>
 </head>
 <body>
@@ -159,13 +186,13 @@
     <ul class="suggest" id="suggest" role="listbox" aria-label="Pin a player" hidden></ul>
   </div>
   <div class="row" id="activebar">
-    <button class="fbtn" id="fbtn" aria-expanded="false" aria-controls="filters">Filters<b id="fcount"></b><span class="chev" aria-hidden="true">▶</span></button>
-    <span class="row" id="chips" style="margin:0"></span>
+    <button class="fbtn" id="fbtn" aria-expanded="false" aria-controls="filters"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4.5h7m3 0h1M2.5 11.5h2m3 0h6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="11" cy="4.5" r="1.6" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="6" cy="11.5" r="1.6" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Filters<b id="fcount"></b><span class="chev" aria-hidden="true"><svg class="ico" viewBox="0 0 12 12"><path d="M4.5 2.5 8 6l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
+    <span class="row" id="chips" style="margin:0"></span><button class="link" id="clear" hidden>Clear all</button>
   </div>
   <div class="fpanel" id="filters" hidden></div>
     <div class="summary">
-    <span class="left"><span id="count"></span><button class="link" id="clear" hidden>Clear filters</button><button class="link" id="allgroups"></button></span>
-    <button class="btn" id="download">Download CSV</button>
+    <span class="left"><span id="count"></span><button class="link" id="allgroups"></button></span>
+    <button class="btn ghost" id="download"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.5v7.5m0 0L5 7m3 3 3-3M3 12.5h10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>CSV</button>
     <span id="viewbar"></span>
   </div>
   <main id="list" aria-live="polite"></main>
@@ -177,6 +204,13 @@
   const TYPES = ['Base', 'Insert', 'SSP', 'Autograph', 'Memorabilia'];
   const STATUS = [['live', 'Live'], ['pulled', 'Pulled']];
   const GROUPINGS = [['subset', 'Subset'], ['team', 'Team'], ['player', 'Player']];
+  const ICON = {
+    chev: '<svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M4.5 2.5 8 6l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    x: '<svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M3.6 3.6l4.8 4.8m0-4.8-4.8 4.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+    check: '<svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.4 6.3 4.9 8.7 9.7 3.5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    ring: '<svg class="ico" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="5.4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>',
+    ringCheck: '<svg class="ico" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="6.2" fill="currentColor"/><path d="M4.3 7.2 6.2 9 9.8 5.2" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  };
   const $ = (s) => document.querySelector(s);
   const store = {
     get(k, d) { try { const v = localStorage.getItem('cl:' + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
@@ -345,7 +379,7 @@
     $('#fcount').textContent = nFilters ? ' ' + nFilters : '';
     $('#clear').hidden = !(chips.length || S.q);
   }
-  const chip = (attrs, label) => `<button class="chip" ${attrs} aria-label="Remove ${esc(label)}">${esc(label)}<span aria-hidden="true">✕</span></button>`;
+  const chip = (attrs, label) => `<button class="chip" ${attrs} aria-label="Remove ${esc(label)}">${esc(label)}<span aria-hidden="true">${ICON.x}</span></button>`;
   function renderViewbar() {
     const by = S.groupBy[S.tab];
     $('#viewbar').innerHTML = `<span class="seglabel">Group by</span><span class="seg" role="group" aria-label="Group by">` +
@@ -440,7 +474,7 @@
   }
   const rowShade = (c) => { const f = teamFill(c.Team); return f ? `--blk:${f};` : ''; };
   const headShade = (g) => { const f = S.groupBy[S.tab] === 'team' ? teamFill(g.name) : ''; return f ? `background:${f};` : ''; };
-  const ghead = (g, open, meta, bar) => `<button class="ghead" data-gkey="${esc(g.key)}" aria-expanded="${open}" style="${headShade(g)}"><span class="chev">▶</span><span class="gname">${esc(g.name)}</span><span class="gmeta">${meta}</span>${bar || ''}</button>`;
+  const ghead = (g, open, meta, bar) => `<button class="ghead" data-gkey="${esc(g.key)}" aria-expanded="${open}" style="${headShade(g)}"><span class="chev">${ICON.chev}</span><span class="gname">${esc(g.name)}</span><span class="gmeta">${meta}</span>${bar || ''}</button>`;
   const progress = (got, total) => `<span class="bar"><i style="width:${total ? Math.round(100 * got / total) : 0}%"></i></span>`;
 
   function renderChecklist() {
@@ -458,12 +492,13 @@
   // Row: chevron, number, player (or card name) with what the grouping doesn't show beneath (subset, or team when
   // grouped by subset) plus any custom print runs. The pill counts the card's parallels. Clicking the row lists them.
   const PARALLEL_GLYPH = '<svg class="pglyph" viewBox="0 0 16 16" aria-hidden="true"><rect x="5" y="1.5" width="9" height="12" rx="1.6" fill="none" stroke="url(#rainbow)" stroke-width="1.4"/><rect x="2" y="3.5" width="9" height="11" rx="1.6" fill="url(#rainbow)"/></svg>';
-  const CHECK_GLYPH = '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.2 6.3 4.8 8.8 9.8 3.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   // A 1/1 in an expanded card shows whether it's been pulled and opens the 1/1s tab narrowed to this card.
+  // Print run in a heavier weight so the numbering stands out: "Prizms Blue <b>/149</b>".
+  const parLabel = (l) => { const m = /^(.*?)\s(\/\d+)$/.exec(l); return m ? `${esc(m[1])} <b>${m[2]}</b>` : esc(l); };
   function oneChip(c, x) {
     const got = !!pullOf(c, x.p);
     return `<button class="par one${got ? ' got' : ''}" data-one="${c.id}:${x.p.id}" title="Show in the 1/1s tab" aria-label="${esc(x.label)}, ${got ? 'pulled' : 'not pulled yet'}. Show in the 1/1s tab">` +
-      `${esc(x.label)}${got ? CHECK_GLYPH : ''}</button>`;
+      `${parLabel(x.label)}${got ? ICON.check : ''}</button>`;
   }
   function cardRow(c) {
     const open = S.cardsOpen.has(c.id);
@@ -475,10 +510,10 @@
     const excs = pars.filter((x) => x.exc).length;
     const sub = detail + (excs ? ` · ${excs} custom print run${excs === 1 ? '' : 's'}` : '');
     const body = open ? `<div class="pars">` + pars.map((x) => x.run === 1 && !x.na ? oneChip(c, x) :
-      `<span class="${x.na ? 'par na' : x.exc ? 'par exc' : 'par'}">${esc(x.label)}</span>`).join('') + `</div>` : '';
+      `<span class="${x.na ? 'par na' : x.exc ? 'par exc' : 'par'}">${parLabel(x.label)}</span>`).join('') + `</div>` : '';
     return `<div class="card" style="${rowShade(c)}"><button data-card="${c.id}" aria-expanded="${open}">
-      <span class="chev" aria-hidden="true">▶</span>
-      <span class="num">#${c.Card_Number}</span>
+      <span class="chev" aria-hidden="true">${ICON.chev}</span>
+      <span class="num"><i>#</i>${c.Card_Number}</span>
       <span class="who"><strong>${esc(title)}</strong><small>${esc(sub)}</small></span>
       <span class="tags"><span class="badge pcount" role="img" aria-label="${n} parallel${n === 1 ? '' : 's'}">${n}${PARALLEL_GLYPH}</span></span></button>${body}</div>`;
   }
@@ -509,14 +544,14 @@
   function slotRow(c, p) {
     const pull = pullOf(c, p);
     return `<div class="slab" data-slotrow="${c.id}:${p.id}" style="${rowShade(c)}">
-      <button class="stamp" data-slot="${c.id}:${p.id}" aria-pressed="${!!pull}" aria-label="${pull ? 'Mark not pulled' : 'Mark pulled'}: ${esc(c.name)} ${esc(p.Parallel)}" ${canEdit() ? '' : 'disabled'}><span class="t">${pull ? '✓ Pulled' : '1/1'}</span></button>
+      <button class="stamp" data-slot="${c.id}:${p.id}" aria-pressed="${!!pull}" aria-label="${pull ? 'Mark not pulled' : 'Mark pulled'}: ${esc(c.name)} ${esc(p.Parallel)}" ${canEdit() ? '' : 'disabled'}><span class="t">${pull ? ICON.check + 'Pulled' : 'Live'}</span></button>
       <span class="who"><strong>${esc(c.name)}</strong><small>${esc(slotContext(c, p))}</small></span>
       ${pull && D.hasOffMarket ? offMarketToggle(pull, c, p) : ''}
     </div>`;
   }
   const offMarketToggle = (pull, c, p) => {
     const on = !!pull.Off_Market;
-    return `<button class="offm" data-offm="${pull.id}" aria-pressed="${on}" aria-label="Off market: ${esc(c.name)} ${esc(p.Parallel)}" title="The owner has said this card isn't for sale" ${canEdit() && pull.id > 0 ? '' : 'disabled'}><span class="box" aria-hidden="true">${on ? '✓' : ''}</span>Off market</button>`;
+    return `<button class="offm" data-offm="${pull.id}" aria-pressed="${on}" aria-label="Off market: ${esc(c.name)} ${esc(p.Parallel)}" title="The owner has said this card isn't for sale" ${canEdit() && pull.id > 0 ? '' : 'disabled'}>${on ? ICON.ringCheck : ICON.ring}Off market</button>`;
   };
   function empty(msg) { $('#list').innerHTML = `<div class="empty">${esc(msg)}</div>`; }
 
