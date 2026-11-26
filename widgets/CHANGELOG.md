@@ -5,15 +5,22 @@ All changes to the checklist widget, newest first. **Unreleased** describes what
 ## Unreleased
 
 ### Changed
+- Design cleanup: one set of drawn icons (chevrons, close, check, download, filters) replaces text glyphs; tags use 6px corners and controls are pills; card numbers are lighter with aligned digits; print runs are emphasized in parallel chips ("Prizms Blue **/149**"); **Download CSV** is a pill with an icon; **Clear all** sits beside the filter chips.
+- 1/1 slots use the same row layout as the Checklist: team tile with the card number, the card name with "Parallel · team" (or subset) beneath, and a status pill on the right where the parallel count sits. Grouped by player, slots lead with the subset like card rows.
+- Each 1/1 has one of three statuses: **Live**, **Pulled** or **Off market** (pulled, and the owner says it isn't for sale). Clicking the pill opens a menu of the three; on phones it opens a bottom sheet, and tapping a choice applies it. This replaces the separate Pulled and Off market toggles. Live removes the logged pull, Pulled logs one, and Off market logs one with `Off_Market` set (or flips it on a pull already logged).
+- Pills read **Live**, **✓ Pulled** or **🔒 Pulled** (off market, in a deeper green). The 1/1 chips in an expanded Checklist row use the same three looks.
+- The Status filter has **Off market** alongside Live and Pulled; any mix can be chosen. Docs without `Pulls.Off_Market` show only Live and Pulled.
+- The card row chevron moves from the tile to just after the card name. On both tabs the card number is centered across its tile and vertically on the card's line.
+- The parallel count and 1/1 status pills are a little larger.
 - Cards with several teams (e.g. "Gotham FC / Kansas City Current") appear under each team when grouped by team, and match either team in the Team filter, instead of forming a combined team.
 - With a team filter (grouped by team) or pinned players (grouped by player), only the chosen teams' or players' groups are shown, even when a shared card also belongs to another.
-- Team shading from an optional Teams table (`Team`, `Color`, calculated `Tint`): rows are tinted by team when grouped by subset or player, and team headers are tinted when grouped by team. Cards with several teams blend from the first team to the last. The 1/1s tab follows the same rules.
+- Team shading from an optional Teams table (`Team`, `Color`, calculated `Tint`): each card row (and 1/1 slot) tints the rounded tile behind its card number with its team's color, leaving the rest of the row neutral; group headers are fully tinted when grouped by team. Cards with several teams blend from the first team to the last.
 - Filters moved into a panel behind a **Filters** button, with every option visible once it's open. Active filters and pinned players show as removable chips next to the button.
 - Player suggestions appear in a dropdown under the search box (arrow keys and Enter work) instead of a row of pills. Typing still filters the list.
 - Groups start closed and open or close only when clicked or with Expand all. Filter changes no longer open or close them.
-- Card rows show a chevron. The pill on the right shows the number of parallels with a rainbow stacked-cards icon; the subset (or team, when grouped by subset) and any custom print runs move under the player name. Click a row to list every parallel.
+- Card rows show a chevron after the card name. The pill on the right shows the number of parallels with a rainbow stacked-cards icon; the subset (or team, when grouped by subset) and any custom print runs move under the player name. Click a row to list every parallel.
 - When grouped by player, card rows lead with the subset and show the card name underneath.
-- In an expanded card row, each 1/1 shows whether it's still live (dark with a rainbow ring, like the 1/1s tab) or pulled (green with ✓). Clicking it opens the 1/1s tab narrowed to that card and highlights the slot.
+- In an expanded card row, each 1/1 shows whether it's live (dark with a rainbow ring), pulled (green with ✓) or off market (deep green with a lock). Clicking it opens the 1/1s tab narrowed to that card, highlights the slot and focuses its status pill.
 
 ## v2 — 2026-11-25
 
