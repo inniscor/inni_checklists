@@ -219,7 +219,7 @@ def visible_sets(pg):
 
 def test_set_switcher(browser):
     all_sets = [x for y in SETS["years"] for x in y["sets"]]
-    featured = [x["name"] for x in all_sets if x.get("featured")][:3]
+    featured = [x["name"] for x in sorted((x for x in all_sets if x.get("featured")), key=lambda x: -x.get("order", float("-inf")))][:3]
     pg = demo_page(browser, h=640)
     check("listed doc: set name as the title, with subtitle",
           pg.inner_text("#setbtn").strip() == "Prizm Black" and pg.inner_text(".setsub") == "2026 Panini · NWSL")
@@ -269,9 +269,10 @@ def test_set_switcher(browser):
     many = {"years": [{"year": "2026", "sets": [dict(x, featured=True) for x in all_sets] + [dict(all_sets[0], name="Extra", doc="x", featured=True)]}]}
     pg = demo_page(browser, sets=many)
     pg.click("#setbtn")
-    check("Featured shows at most three", len(pg.query_selector_all("#msec-0 a.mi")) == 3)
+    check("Featured shows at most three", len(pg.query_selector_all("#msec-0 .mi.si")) == 3)
     pg.close()
-    # Order comes from the `order` numbers, not file position; sets without one go last; Featured takes the lowest three.
+    # Order comes from the `order` numbers, not file position; sets without one go last.
+    # Years list lowest first; Featured lists highest first and keeps the three highest.
     base = {k: v for k, v in all_sets[0].items() if k not in ("order", "featured")}
     shuffled = {"years": [{"year": "2026", "sets": [
         dict(base, name="C", doc="c", order=30, featured=True), dict(base, name="Unnumbered", doc="u", featured=True),
@@ -279,7 +280,7 @@ def test_set_switcher(browser):
         dict(base, name="B", doc="b", order=20)]}]}
     pg = demo_page(browser, sets=shuffled)
     pg.click("#setbtn")
-    check("Featured lists the three lowest-numbered featured sets in order", visible_sets(pg) == ["A", "C", "D"])
+    check("Featured lists the three highest-numbered featured sets, highest first", visible_sets(pg) == ["D", "C", "A"])
     pg.click('.menu .msec[data-sec="y:2026"]')
     check("a year lists its sets by order, unnumbered last", visible_sets(pg) == ["A", "B", "C", "D", "Unnumbered"])
     pg.close()

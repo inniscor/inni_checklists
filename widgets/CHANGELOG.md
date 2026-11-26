@@ -5,7 +5,7 @@ All changes to the checklist widget, newest first. **Unreleased** describes what
 ## Unreleased
 
 ### Changed
-- The set menu lists sets by their `order` number in `sets.json` (lowest first), in Featured and in each year; sets without one go last. Featured shows the three featured sets with the lowest numbers.
+- The set menu lists sets by their `order` number in `sets.json`: lowest first in each year, highest first in Featured. If more than three sets are featured, Featured shows the three with the highest numbers. Sets without a number go last.
 
 ## v4 — 2026-11-25
 
