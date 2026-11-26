@@ -1,0 +1,581 @@
+{
+ "Subsets": {
+  "id": [
+   1,
+   2,
+   3
+  ],
+  "Subset": [
+   "Base",
+   "Connections",
+   "Signatures"
+  ],
+  "Base": [
+   true,
+   false,
+   false
+  ],
+  "Insert": [
+   false,
+   true,
+   false
+  ],
+  "SSP": [
+   false,
+   false,
+   false
+  ],
+  "Autograph": [
+   false,
+   false,
+   true
+  ],
+  "Memorabilia": [
+   false,
+   false,
+   false
+  ]
+ },
+ "Products": {
+  "id": [
+   1
+  ],
+  "Product": [
+   "Hobby"
+  ]
+ },
+ "Cards": {
+  "id": [
+   1,
+   2,
+   3,
+   4,
+   5,
+   6,
+   7,
+   8,
+   9,
+   10,
+   11,
+   12,
+   13
+  ],
+  "Subset": [
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   2,
+   2,
+   3,
+   3,
+   3,
+   2
+  ],
+  "Card_Number": [
+   1,
+   9,
+   55,
+   138,
+   85,
+   102,
+   103,
+   5,
+   10,
+   7,
+   8,
+   15,
+   12
+  ],
+  "Team": [
+   "Gotham FC",
+   "Gotham FC",
+   "Washington Spirit",
+   "Kansas City Current",
+   "Angel City FC",
+   "Portland Thorns FC",
+   "Houston Dash",
+   "Gotham FC",
+   "Kansas City Current",
+   "Washington Spirit",
+   "Kansas City Current",
+   "Angel City FC",
+   "Gotham FC / Kansas City Current"
+  ],
+  "Card_Name": [
+   "Rose Lavelle",
+   "Esther Gonzalez",
+   "Trinity Rodman",
+   "Temwa Chawinga",
+   "Gisele Thompson",
+   "Sophia Wilson",
+   "Kiki Van Zanten",
+   "Rose Lavelle / Jaedyn Shaw",
+   "Croix Bethune / Temwa Chawinga",
+   "Trinity Rodman",
+   "Temwa Chawinga",
+   "Gisele Thompson",
+   "Esther Gonzalez / Temwa Chawinga"
+  ],
+  "Players": [
+   [
+    "L",
+    1
+   ],
+   [
+    "L",
+    2
+   ],
+   [
+    "L",
+    3
+   ],
+   [
+    "L",
+    4
+   ],
+   [
+    "L",
+    5
+   ],
+   [
+    "L",
+    6
+   ],
+   [
+    "L",
+    7
+   ],
+   [
+    "L",
+    1,
+    8
+   ],
+   [
+    "L",
+    9,
+    4
+   ],
+   [
+    "L",
+    3
+   ],
+   [
+    "L",
+    4
+   ],
+   [
+    "L",
+    5
+   ],
+   [
+    "L",
+    2,
+    4
+   ]
+  ],
+  "One_of_Ones": [
+   [
+    "L",
+    9
+   ],
+   [
+    "L",
+    9
+   ],
+   [
+    "L",
+    9
+   ],
+   [
+    "L",
+    9
+   ],
+   [
+    "L",
+    9
+   ],
+   [
+    "L",
+    9
+   ],
+   [
+    "L",
+    9
+   ],
+   [
+    "L",
+    15
+   ],
+   [
+    "L",
+    15
+   ],
+   [
+    "L",
+    21
+   ],
+   [
+    "L",
+    21
+   ],
+   [
+    "L",
+    21
+   ],
+   [
+    "L",
+    15
+   ]
+  ],
+  "Print_Run_Exceptions": [
+   [
+    "L"
+   ],
+   [
+    "L"
+   ],
+   [
+    "L"
+   ],
+   [
+    "L"
+   ],
+   [
+    "L"
+   ],
+   [
+    "L"
+   ],
+   [
+    "L"
+   ],
+   [
+    "L"
+   ],
+   [
+    "L"
+   ],
+   [
+    "L"
+   ],
+   [
+    "L"
+   ],
+   [
+    "L"
+   ],
+   [
+    "L"
+   ]
+  ],
+  "Position": [
+   "F",
+   "F",
+   "F",
+   "F",
+   "F",
+   "F",
+   "F",
+   "F",
+   "F",
+   "F",
+   "F",
+   "F",
+   "F / F"
+  ]
+ },
+ "Parallels": {
+  "id": [
+   1,
+   2,
+   3,
+   4,
+   5,
+   6,
+   7,
+   8,
+   9,
+   10,
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17,
+   18,
+   19,
+   20,
+   21
+  ],
+  "Subset": [
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   2,
+   2,
+   2,
+   2,
+   2,
+   2,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3
+  ],
+  "Parallel": [
+   "Base",
+   "Prizms Silver",
+   "Prizms Blue",
+   "Prizms Purple",
+   "Prizms Carbon Blue",
+   "Prizms Mojo",
+   "Prizms Gold",
+   "Prizms Black Gold",
+   "Prizms Gold Vinyl",
+   "Base",
+   "Prizms Red",
+   "Prizms Blue",
+   "Prizms Mojo",
+   "Prizms Gold",
+   "Prizms Gold Vinyl",
+   "Base",
+   "Prizms Red",
+   "Prizms Blue",
+   "Prizms Mojo",
+   "Prizms Gold",
+   "Prizms Gold Vinyl"
+  ],
+  "Print_Run": [
+   null,
+   null,
+   149,
+   125,
+   99,
+   25,
+   10,
+   5,
+   1,
+   null,
+   75,
+   49,
+   25,
+   10,
+   1,
+   null,
+   49,
+   35,
+   25,
+   10,
+   1
+  ],
+  "ParallelProducts_Product": [
+   [
+    "L",
+    1
+   ],
+   [
+    "L",
+    1
+   ],
+   [
+    "L",
+    1
+   ],
+   [
+    "L",
+    1
+   ],
+   [
+    "L",
+    1
+   ],
+   [
+    "L",
+    1
+   ],
+   [
+    "L",
+    1
+   ],
+   [
+    "L",
+    1
+   ],
+   [
+    "L",
+    1
+   ],
+   [
+    "L",
+    1
+   ],
+   [
+    "L",
+    1
+   ],
+   [
+    "L",
+    1
+   ],
+   [
+    "L",
+    1
+   ],
+   [
+    "L",
+    1
+   ],
+   [
+    "L",
+    1
+   ],
+   [
+    "L",
+    1
+   ],
+   [
+    "L",
+    1
+   ],
+   [
+    "L",
+    1
+   ],
+   [
+    "L",
+    1
+   ],
+   [
+    "L",
+    1
+   ],
+   [
+    "L",
+    1
+   ]
+  ]
+ },
+ "PrintRunExceptions": {
+  "id": [
+   1,
+   2,
+   3,
+   4
+  ],
+  "Card_Key": [
+   10,
+   10,
+   10,
+   10
+  ],
+  "Parallel_Key": [
+   17,
+   18,
+   19,
+   20
+  ],
+  "Print_Run": [
+   5,
+   4,
+   3,
+   2
+  ],
+  "Not_Available": [
+   false,
+   false,
+   false,
+   false
+  ],
+  "Label": [
+   "Prizms Red /5",
+   "Prizms Blue /4",
+   "Prizms Mojo /3",
+   "Prizms Gold /2"
+  ]
+ },
+ "Pulls": {
+  "id": [
+   1,
+   2
+  ],
+  "Card_Key": [
+   1,
+   2
+  ],
+  "Parallel_Key": [
+   9,
+   9
+  ],
+  "Off_Market": [
+   true,
+   false
+  ],
+  "Reported_At": [
+   null,
+   null
+  ]
+ },
+ "Players": {
+  "id": [
+   1,
+   2,
+   3,
+   4,
+   5,
+   6,
+   7,
+   8,
+   9
+  ],
+  "Player_Name": [
+   "Rose Lavelle",
+   "Esther Gonzalez",
+   "Trinity Rodman",
+   "Temwa Chawinga",
+   "Gisele Thompson",
+   "Sophia Wilson",
+   "Kiki Van Zanten",
+   "Jaedyn Shaw",
+   "Croix Bethune"
+  ]
+ },
+ "Teams": {
+  "id": [
+   1,
+   2,
+   3,
+   4,
+   5,
+   6
+  ],
+  "Team": [
+   "Gotham FC",
+   "Washington Spirit",
+   "Kansas City Current",
+   "Angel City FC",
+   "Portland Thorns FC",
+   "Houston Dash"
+  ],
+  "Tint": [
+   "#E0E0E0",
+   "#F7F8CE",
+   "#D5F1F1",
+   "#F7D5CE",
+   "#F4D2D4",
+   "#F8DFCE"
+  ]
+ }
+}

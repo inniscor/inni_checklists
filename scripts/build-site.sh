@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Builds the GitHub Pages site into _site/.
-# Copies every tracked file except .github/ and scripts/, then publishes the
+# Copies every tracked file except .github/, scripts/ and tests/, then publishes the
 # version named in widgets/LATEST as widgets/latest/.
 set -euo pipefail
 
@@ -22,7 +22,7 @@ fi
 
 rm -rf _site
 mkdir _site
-git ls-files -z | grep -zv -e '^\.github/' -e '^scripts/' | xargs -0 cp --parents -t _site
+git ls-files -z | grep -zv -e '^\.github/' -e '^scripts/' -e '^tests/' | xargs -0 cp --parents -t _site
 cp -r "widgets/$version" _site/widgets/latest
 touch _site/.nojekyll
 
