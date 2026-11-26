@@ -7,7 +7,7 @@ All changes to the checklist widget, newest first. **Unreleased** describes what
 ### Changed
 - Cards with several teams (e.g. "Gotham FC / Kansas City Current") appear under each team when grouped by team, and match either team in the Team filter, instead of forming a combined team.
 - With a team filter (grouped by team) or pinned players (grouped by player), only the chosen teams' or players' groups are shown, even when a shared card also belongs to another.
-- Team shading from an optional Teams table (`Team`, `Color`, calculated `Tint`): rows are tinted by team when grouped by subset or player, and team headers are tinted when grouped by team. Cards with several teams blend from the first team to the last. The 1/1s tab follows the same rules.
+- Team shading from an optional Teams table (`Team`, `Color`, calculated `Tint`): each card row (and 1/1 slot) tints a rounded tile beside the name with its team's color, leaving the rest of the row neutral; group headers are fully tinted when grouped by team. Cards with several teams blend from the first team to the last.
 - Filters moved into a panel behind a **Filters** button, with every option visible once it's open. Active filters and pinned players show as removable chips next to the button.
 - Player suggestions appear in a dropdown under the search box (arrow keys and Enter work) instead of a row of pills. Typing still filters the list.
 - Groups start closed and open or close only when clicked or with Expand all. Filter changes no longer open or close them.

@@ -89,7 +89,7 @@
   .who small { color: var(--muted); font-size: 13px; }
   .tags { display: flex; gap: 4px; }
   .card > button .tags { align-self: start; padding-top: 2px; }
-  @media (max-width: 600px) { .tags .badge { white-space: normal; max-width: 30vw; text-align: right; line-height: 1.2; padding: 2px 7px; } .card > button { grid-template-columns: 10px 36px 1fr auto; gap: 8px; } }
+  @media (max-width: 600px) { .tags .badge { white-space: normal; max-width: 30vw; text-align: right; line-height: 1.2; padding: 2px 7px; } .card > button { grid-template-columns: 10px 42px 1fr auto; gap: 8px; } }
   .badge { font-family: var(--cond); font-weight: 600; font-size: 13px; padding: 1px 7px; border-radius: 4px; background: var(--slab); color: #fff; white-space: nowrap; }
   .badge.pcount { display: inline-flex; align-items: center; gap: 4px; font-size: 14px; padding: 1px 7px 1px 8px; }
   .pglyph { width: 15px; height: 15px; display: block; }
@@ -109,7 +109,11 @@
   .slab.flash { animation: flash 2.4s ease-out; }
 
   /* 1/1 slab rows: the one bold element */
-  .slab { border-top: 1px solid var(--line); padding: 8px 12px; display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; align-items: center; }
+  .slab { border-top: 1px solid var(--line); padding: 8px 12px; display: grid; grid-template-columns: auto 1fr; gap: 4px 16px; align-items: center; }
+  /* Team block: the tint covers only the chevron/number (or stamp) area; --blkw is where that area ends. */
+  .card { --blkw: 83px; } .slab { --blkw: 106px; }
+  .card[style*="--blk"], .slab[style*="--blk"] { background: var(--blk) left top / var(--blkw) 100% no-repeat, var(--surface); }
+  @media (max-width: 600px) { .card { --blkw: 76px; } }
   .stamp { position: relative; width: 86px; height: 40px; border-radius: var(--radius-s); border: 0; cursor: pointer; font-family: var(--cond); font-weight: 700; font-size: 17px; color: #fff; background: var(--slab); overflow: hidden; white-space: nowrap; }
   .stamp::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 2px; background: conic-gradient(from 210deg, #7FE3D4, #B4A2F5, #F5B3C8, #F3E39A, #7FE3D4); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; opacity: .85; }
   .stamp[aria-pressed="true"] { background: var(--pitch); }
@@ -425,16 +429,17 @@
     btn.textContent = anyClosed ? 'Expand all' : 'Collapse all';
   }
   // ---------- team shading ----------
-  // Rows are tinted by their card's team when grouped by subset or player. Grouped by team, the header carries the
-  // tint and rows stay plain. A card with several teams blends from its first team to its last (two colors at most).
-  function teamShade(teamText) {
+  // Every card row (and 1/1 slot) tints only the block beside the name (chevron and number, or the 1/1 stamp) with
+  // its team's color; the rest of the row stays neutral. Grouped by team, the whole group header is tinted too.
+  // A card with several teams blends from its first team to its last (two colors at most).
+  function teamFill(teamText) {
     const tints = [...new Set(String(teamText || '').split(' / ').map((t) => t.trim()))].map((t) => D.teamTint.get(t)).filter(Boolean);
     if (!tints.length) return '';
     const a = tints[0], b = tints[tints.length - 1];
-    return a === b ? `background:${a};` : `background:linear-gradient(90deg, ${a}, ${b});`;
+    return a === b ? `linear-gradient(${a}, ${a})` : `linear-gradient(90deg, ${a}, ${b})`;
   }
-  const rowShade = (c) => S.groupBy[S.tab] === 'team' ? '' : teamShade(c.Team);
-  const headShade = (g) => S.groupBy[S.tab] === 'team' ? teamShade(g.name) : '';
+  const rowShade = (c) => { const f = teamFill(c.Team); return f ? `--blk:${f};` : ''; };
+  const headShade = (g) => { const f = S.groupBy[S.tab] === 'team' ? teamFill(g.name) : ''; return f ? `background:${f};` : ''; };
   const ghead = (g, open, meta, bar) => `<button class="ghead" data-gkey="${esc(g.key)}" aria-expanded="${open}" style="${headShade(g)}"><span class="chev">▶</span><span class="gname">${esc(g.name)}</span><span class="gmeta">${meta}</span>${bar || ''}</button>`;
   const progress = (got, total) => `<span class="bar"><i style="width:${total ? Math.round(100 * got / total) : 0}%"></i></span>`;
 
