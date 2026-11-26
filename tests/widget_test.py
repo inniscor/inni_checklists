@@ -151,22 +151,64 @@ def test_without_off_market(browser):
     pg.close()
 
 
+def open_sections(pg):
+    return [b.get_attribute("data-sec") for b in pg.query_selector_all(".menu .msec, .sheet .msec") if b.get_attribute("aria-expanded") == "true"]
+
+
+def visible_sets(pg):
+    return [a.inner_text().split("\n")[0] for a in pg.query_selector_all(".menu a.mi, .sheet a.mi") if a.is_visible()]
+
+
 def test_set_switcher(browser):
+    all_sets = [x for y in SETS["years"] for x in y["sets"]]
+    featured = [x["name"] for x in all_sets if x.get("featured")][:3]
     pg = demo_page(browser, h=640)
     check("listed doc: set name as the title, with subtitle",
           pg.inner_text("#setbtn").strip() == "Prizm Black" and pg.inner_text(".setsub") == "2026 Panini · NWSL")
     pg.click("#setbtn")
-    links = pg.eval_on_selector_all(".menu .mi", "els => els.map(a => [a.getAttribute('href'), a.target, a.getAttribute('aria-current')])")
-    check("set menu lists every set in sets.json", len(links) == sum(len(g["sets"]) for g in SETS["groups"]))
-    check("set links open in the same tab with style=singlePage", all(l[1] == "_top" and "style=singlePage" in l[0] for l in links))
-    check("current set is marked", links[0][2] == "page")
+    secs = [b.get_attribute("data-sec") for b in pg.query_selector_all(".menu .msec")]
+    check(f"sections are Featured then each year {secs}", secs == ["featured"] + [f"y:{y['year']}" for y in SETS["years"]])
+    check("Featured starts open, years closed", open_sections(pg) == ["featured"] and visible_sets(pg) == featured)
+    check("current set is focused when the menu opens", pg.evaluate("() => document.activeElement.getAttribute('aria-current')") == "page")
+    pg.click('.menu .msec[data-sec="y:2026"]')
+    check("opening a year closes Featured", open_sections(pg) == ["y:2026"] and visible_sets(pg) == [x["name"] for x in SETS["years"][0]["sets"]])
+    check("the menu stays open while switching sections", pg.query_selector(".menu"))
+    pg.click('.menu .msec[data-sec="y:2026"]')
+    check("clicking the open section closes it", open_sections(pg) == [] and visible_sets(pg) == [])
+    pg.click('.menu .msec[data-sec="featured"]')
+    check("reopening Featured", open_sections(pg) == ["featured"])
+    check("current set marked in each section it appears in", len(pg.query_selector_all('.menu [aria-current="page"]')) == 2)
+    links = pg.eval_on_selector_all(".menu a.mi", "els => els.map(a => [a.getAttribute('href'), a.target])")
+    check("set links open in the same tab with style=singlePage", links and all(l[1] == "_top" and "style=singlePage" in l[0] for l in links))
+    # Arrow keys only visit what's showing: 3 featured sets, then the section buttons.
+    order = []
+    for _ in range(6):
+        pg.keyboard.press("ArrowDown")
+        order.append(pg.evaluate("() => document.activeElement.dataset.sec || document.activeElement.innerText.split('\\n')[0]"))
+    check(f"arrow keys skip sets in closed sections {order}", "y:2026" in order and order.count("featured") == 1 and len(set(order)) == 5)
     pg.keyboard.press("Escape")
     check("Escape closes the set menu", not pg.query_selector(".menu"))
     pg.close()
+
     pg = demo_page(browser, w=390, h=760)
     pg.click("#setbtn")
-    check("[phone] set menu opens as a bottom sheet", pg.query_selector(".sheet.setmenu"))
+    check("[phone] set menu opens as a bottom sheet with Featured open", pg.query_selector(".sheet.setmenu") and open_sections(pg) == ["featured"])
+    pg.click('.sheet .msec[data-sec="y:2026"]')
+    check("[phone] tapping a year switches sections", open_sections(pg) == ["y:2026"])
     pg.close()
+
+    many = {"years": [{"year": "2026", "sets": [dict(x, featured=True) for x in all_sets] + [dict(all_sets[0], name="Extra", doc="x", featured=True)]}]}
+    pg = demo_page(browser, sets=many)
+    pg.click("#setbtn")
+    check("Featured shows at most three", len(pg.query_selector_all("#msec-0 a.mi")) == 3)
+    pg.close()
+    none = {"years": [{"year": "2026", "sets": [{k: v for k, v in x.items() if k != "featured"} for x in all_sets]}, {"year": "2025", "sets": [dict(all_sets[0], name="Old set", doc="old", featured=False)]}]}
+    pg = demo_page(browser, sets=none)
+    pg.click("#setbtn")
+    check("no featured sets: no Featured section, all years closed",
+          [b.get_attribute("data-sec") for b in pg.query_selector_all(".menu .msec")] == ["y:2026", "y:2025"] and open_sections(pg) == [])
+    pg.close()
+
     pg = demo_page(browser, doc="9Abbfx43q1qkGw3t1Qm9BL", name="Checklist Sandbox")
     check("unlisted doc: its own name as the title, nothing marked",
           pg.inner_text("#setbtn").strip() == "Checklist Sandbox" and (pg.click("#setbtn") or not pg.query_selector(".menu [aria-current]")))
