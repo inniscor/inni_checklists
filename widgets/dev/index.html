@@ -236,11 +236,13 @@
       // Card_Name is the display name; if it's blank, fall back to the card's player names.
       c.playerNames = refs(c.Players).map((id) => playerName.get(id)).filter(Boolean);
       c.name = (typeof c.Card_Name === 'string' && c.Card_Name.trim()) || c.playerNames.join(' / ') || '(No player)';
+      // A card can list several teams ("A / B"); each one is a team in its own right for grouping and filters.
+      c.teams = [...new Set(String(c.Team || '').split(' / ').map((t) => t.trim()).filter(Boolean))];
       c.search = (c.name + ' ' + c.playerNames.join(' ') + ' ' + c.Team).toLowerCase();
     }
     D.cards.sort((a, b) => (a.Subset - b.Subset) || (a.Card_Number - b.Card_Number));
     D.totalOnes = D.cards.reduce((n, c) => n + c.ones.length, 0);
-    D.teams = [...new Set(D.cards.map((c) => c.Team))].sort();
+    D.teams = [...new Set(D.cards.flatMap((c) => c.teams))].sort();
     D.players = [...new Set(D.cards.flatMap((c) => c.playerNames))].sort();
     D.playerTeam = new Map();
     for (const c of D.cards) for (const n of c.playerNames) if (!D.playerTeam.has(n) && !c.Team.includes(' / ')) D.playerTeam.set(n, c.Team);
@@ -260,7 +262,7 @@
   // ---------- filtering ----------
   function cardMatches(c) {
     const f = S.f;
-    if (f.team.size && !f.team.has(c.Team)) return false;
+    if (f.team.size && !c.teams.some((t) => f.team.has(t))) return false;
     if (f.subset.size && !f.subset.has(String(c.Subset))) return false;
     if (f.type.size && ![...f.type].some((t) => c.sub[t])) return false;
     if (f.product.size) { const sp = D.subsetProducts.get(c.Subset); if (!sp || ![...f.product].some((p) => sp.has(+p))) return false; }
@@ -289,14 +291,18 @@
   // Each card yields [key, name] pairs; a card showing several players lands in each player's group.
   const groupsOf = {
     subset: (c) => [['s' + c.Subset, c.sub.Subset]],
-    team: (c) => [['t' + c.Team, c.Team]],
+    team: (c) => (c.teams.length ? c.teams : ['(No team)']).map((t) => ['t' + t, t]),
     player: (c) => (c.playerNames.length ? c.playerNames : ['(No player)']).map((n) => ['p' + n, n]),
   };
   const groupSort = { subset: (a, b) => a.first.Subset - b.first.Subset, team: (a, b) => a.name.localeCompare(b.name), player: (a, b) => a.name.localeCompare(b.name) };
   function groupCards(cards) {
     const by = S.groupBy[S.tab];
     const m = new Map();
-    for (const c of cards) for (const [k, name] of groupsOf[by](c)) { if (!m.has(k)) m.set(k, { key: k, name, first: c, cards: [] }); m.get(k).cards.push(c); }
+    // A shared card lands in every team's (or player's) group, but when teams are filtered or players pinned,
+    // only the chosen teams' (or players') groups are shown.
+    const keep = by === 'team' && S.f.team.size ? (name) => S.f.team.has(name)
+      : by === 'player' && S.players.size ? (name) => S.players.has(name) : () => true;
+    for (const c of cards) for (const [k, name] of groupsOf[by](c)) { if (!keep(name)) continue; if (!m.has(k)) m.set(k, { key: k, name, first: c, cards: [] }); m.get(k).cards.push(c); }
     const gs = [...m.values()].sort(groupSort[by]);
     for (const g of gs) g.cards.sort((a, b) => (a.Subset - b.Subset) || (a.Card_Number - b.Card_Number));
     return gs;
