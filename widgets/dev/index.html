@@ -682,8 +682,15 @@
     } catch (e) {}
     if (demo) { docId = window.DEMO_DOC_ID || ''; docName = window.DEMO_DOC_NAME || ''; }
     else if (inGrist) {
-      try { const t = await grist.docApi.getAccessToken({ readOnly: true }); docId = (/\/docs\/([^/?#]+)/.exec(t.baseUrl || '') || [])[1] || ''; } catch (e) {}
-      try { docName = await grist.docApi.getDocName(); } catch (e) {}
+      // getDocName() returns the doc's ID rather than its title, so the title comes from the REST API (GET /api/docs/:id)
+      // using the widget's read-only access token. If that fails the title is a generic "Checklists", never the ID.
+      try {
+        const t = await grist.docApi.getAccessToken({ readOnly: true });
+        docId = (/\/docs\/([^/?#]+)/.exec(t.baseUrl || '') || [])[1] || '';
+        const r = await fetch(`${t.baseUrl}?auth=${encodeURIComponent(t.token)}`);
+        if (r.ok) { const n = String((await r.json()).name || '').trim(); if (n && n !== docId) docName = n; }
+      } catch (e) {}
+      if (!docId) try { docId = await grist.docApi.getDocName(); } catch (e) {}
     }
     SETS.groups = (data && Array.isArray(data.groups) ? data.groups : []).map((g) => ({ title: String(g.title || ''), sets: (g.sets || []).filter((x) => x && x.name && x.url) })).filter((g) => g.sets.length);
     SETS.current = SETS.groups.flatMap((g) => g.sets).find((x) => docId && x.doc === docId) || null;
@@ -693,7 +700,7 @@
   function renderSetHead() {
     const head = $('#sethead');
     const all = SETS.groups.flatMap((g) => g.sets), cur = SETS.current;
-    const title = cur ? cur.name : SETS.docName;
+    const title = cur ? cur.name : SETS.docName || (SETS.groups.length ? 'Checklists' : '');
     if (!title && !all.length) { head.hidden = true; return; }
     const others = all.filter((x) => x !== cur).length;
     const sub = cur ? cur.sub || '' : '';
