@@ -4,6 +4,10 @@ All changes to the checklist widget, newest first. **Unreleased** describes what
 
 ## Unreleased
 
+Nothing yet.
+
+## v6 — 2026-11-25
+
 ### Changed
 - The search box, the **Filters** button with its chips, and the filters panel stay pinned to the top while scrolling; the set title, tabs, count/Group by row and the list scroll away. The pinned bar gets a light shadow once it sticks, and an open filters panel scrolls on its own if it's taller than the screen. (The tabs were the pinned part before.)
 - Rows reached by keyboard or "Show in the 1/1s tab" stop below the pinned bar instead of behind it.
