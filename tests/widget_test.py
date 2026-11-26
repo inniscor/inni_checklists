@@ -151,6 +151,64 @@ def test_without_off_market(browser):
     pg.close()
 
 
+def group_names(pg):
+    return [g.inner_text().strip() for g in pg.query_selector_all("#list .ghead .gname")]
+
+
+def cards_in_group(pg, name):
+    """Opens the group (if closed) and returns the card IDs listed under it."""
+    head = pg.query_selector(f'#list .ghead:has(.gname:text-is("{name}"))')
+    if head.get_attribute("aria-expanded") != "true":
+        head.click()
+        head = pg.query_selector(f'#list .ghead:has(.gname:text-is("{name}"))')
+    section = head.evaluate_handle("h => h.closest('section')")
+    return [int(b.get_attribute("data-card")) for b in section.query_selector_all("button[data-card]")]
+
+
+def row_style(pg, card_id):
+    return pg.eval_on_selector(f'button[data-card="{card_id}"]', "b => b.closest('.card').getAttribute('style') || ''")
+
+
+def test_teams(browser):
+    tint = dict(zip(DEMO["Teams"]["Team"], DEMO["Teams"]["Tint"]))
+    multi = next(i for i, t in zip(DEMO["Cards"]["id"], DEMO["Cards"]["Team"]) if " / " in t)
+    a, b = [x.strip() for x in DEMO["Cards"]["Team"][DEMO["Cards"]["id"].index(multi)].split(" / ")]
+    pg = demo_page(browser, "checklist", by="team")
+    names = group_names(pg)
+    check(f"grouped by team: no combined group for #{multi}", not any(" / " in n for n in names) and a in names and b in names)
+    check(f"multi-team card #{multi} is listed under {a} and under {b}", multi in cards_in_group(pg, a) and multi in cards_in_group(pg, b))
+    heads = {h.inner_text().split("\n")[0].strip(): h.get_attribute("style") or "" for h in pg.query_selector_all("#list .ghead")}
+    check("team headers are tinted with their team's color", all(tint[n] in heads[n] for n in names if n in tint))
+    single = next(i for i, t in zip(DEMO["Cards"]["id"], DEMO["Cards"]["Team"]) if t == a)
+    check(f"a single-team row tints its tile with {a}'s color", f"--blk:linear-gradient({tint[a]}, {tint[a]})" in row_style(pg, single))
+    st = row_style(pg, multi)
+    check(f"multi-team row blends {a} to {b}", "90deg" in st and st.index(tint[a]) < st.index(tint[b]))
+    pg.click("#fbtn")
+    pg.click(f'#filters [data-f="team"][data-v="{a}"]')
+    check(f"team filter on {a}: only the {a} group shows, with the shared card", group_names(pg) == [a] and multi in cards_in_group(pg, a))
+    pg.close()
+
+    pg = demo_page(browser, "checklist", by="subset")
+    check("grouped by subset: headers aren't tinted", not any(h.get_attribute("style") for h in pg.query_selector_all("#list .ghead")))
+    pg.close()
+
+    pg = demo_page(browser, "checklist", by="player")
+    pg.fill("#q", "Esther")
+    pg.click('#suggest [data-add="Esther Gonzalez"]')
+    pg.fill("#q", "")
+    pg.dispatch_event("#q", "input")
+    check("pinned player, grouped by player: only that player's group shows", group_names(pg) == ["Esther Gonzalez"] and multi in cards_in_group(pg, "Esther Gonzalez"))
+    pg.close()
+
+    d = copy.deepcopy(DEMO)
+    del d["Teams"]
+    pg = demo_page(browser, "checklist", by="team", demo=d)
+    cards_in_group(pg, a)
+    check("no Teams table: no tiles or headers are tinted",
+          not any(h.get_attribute("style") for h in pg.query_selector_all("#list .ghead")) and "--blk" not in row_style(pg, multi))
+    pg.close()
+
+
 def open_sections(pg):
     return [b.get_attribute("data-sec") for b in pg.query_selector_all(".menu .msec, .sheet .msec") if b.get_attribute("aria-expanded") == "true"]
 
@@ -270,6 +328,7 @@ def main():
         # A step that can't find what it needs fails its whole group instead of stopping the run.
         groups = [(f"checklist and 1/1s at {w}px", test_checklist_and_ones, (w,)) for w in (760, 390)] + [
             ("doc without Off_Market", test_without_off_market, ()),
+            ("team shading and multi-team cards", test_teams, ()),
             ("set switcher", test_set_switcher, ()),
             ("inside a Grist frame", test_in_grist_frame, ())]
         for label, fn, args in groups:
