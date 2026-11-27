@@ -411,7 +411,7 @@ def flip_back(pg, how):
     if how == "button":
         pg.click(".group.flipped .gstats")
     elif how == "back":
-        pg.click(".group.flipped .backrow button")
+        pg.click(".group.flipped .ss-foot [data-gstats]")
     elif how == "escape":
         pg.keyboard.press("Escape")
     elif how == "dimmed":
@@ -419,11 +419,17 @@ def flip_back(pg, how):
     pg.wait_for_function("() => !document.querySelector('.group.flipped') && !document.querySelector('.flip-out, .flip-in')")
 
 
-def tile(text, label):
-    """The value line and the line under it for one stat tile, from a panel's text."""
-    lines = [l.strip() for l in text.split("\n") if l.strip()]
-    i = lines.index(label)
-    return lines[i + 1], lines[i + 2]
+def metric(pg, key, m):
+    """One row of a flipped group's stats panel (m: autos, hits, live, cards) as a dict of its texts and bar fill."""
+    return pg.evaluate("""([key, m]) => {
+      const r = document.querySelector(`.group.flipped[data-group="${CSS.escape(key)}"] .ss-row[data-metric="${m}"]`);
+      if (!r) return null;
+      const t = (s) => { const e = r.querySelector(s); return e ? e.textContent.replace(/\\s+/g, ' ').trim() : null; };
+      const i = r.querySelector('.ss-meter i'), tick = r.querySelector('.ss-even');
+      return { big: t('.ss-big'), rank: t('.ss-rank'), share: t('.ss-share b'), x: t('.ss-x'), count: t('.ss-count'),
+               fill: i ? Math.round(parseFloat(i.style.width)) : null,
+               tick: tick ? Math.round(100 * (tick.getBoundingClientRect().left + 1 - r.querySelector('.ss-meter').getBoundingClientRect().left) / r.querySelector('.ss-meter').getBoundingClientRect().width) : null };
+    }""", [key, m])
 
 
 def test_stats(browser):
@@ -440,19 +446,30 @@ def test_stats(browser):
     key = "tKansas City Current"
     pg.click(f'.gstats[data-gstats="{key}"]')
     check("the card flips: it turns away first", pg.query_selector(f'.group[data-group="{key}"].flip-out') is not None)
-    kc = stats_panel(pg, key)
+    text = stats_panel(pg, key)
     sec = f'.group[data-group="{key}"]'
     check("flipped: the stats replace the group's cards", pg.query_selector(f"{sec} button[data-card]") is None and pg.get_attribute(f"{sec} .gstats", "aria-pressed") == "true")
     check("flipping opens the group underneath", pg.get_attribute(f'[data-gkey="{key}"]', "aria-expanded") == "true")
     check("the flipped group can't be collapsed", pg.is_disabled(f'[data-gkey="{key}"]'))
     check("the rest of the list is dimmed and can't be used",
           pg.evaluate("() => [...document.querySelectorAll('#list .group:not(.flipped)')].every((g) => g.inert && +getComputedStyle(g).opacity < .5)"))
-    check("Autos tile: count, share of the set and rank (shared cards count half)", tile(kc, "Autos") == ("1", "33% of the set · #1 of 6"))
-    check("1/1s tile: live of total", tile(kc, "1/1s live")[0].replace(" ", " ").replace(" ", "") == "4of4")
-    check("Cards tile counts shared cards in full", tile(kc, "Cards")[0] == "4")
-    check("Per box: 2 autos × 1/3 of the auto cards = 0.67 per box, 6.7 per case", "0.67" in kc and "6.7 per case" in kc and "about 1 in 2 boxes" in kc)
-    check("Share of the set has an even-share tick for teams", "Share of the set" in kc and pg.query_selector(f"{sec} .ss-even") is not None)
-    check("the panel says what it covers", "Whole set, every product" in kc)
+    rows = pg.evaluate(f"() => [...document.querySelectorAll('.group.flipped .ss-row')].map((r) => r.dataset.metric)")
+    check("four rows, the top-line numbers only", rows == ["autos", "hits", "live", "cards"])
+    check("no per-box estimates or other tiers", "Per box" not in text and "Numbered" not in text)
+    au = metric(pg, key, "autos")
+    check("Autos: number and rank on the left", au["big"] == "1" and au["rank"] == "#1 of 6 teams")
+    check("Autos: share on the right (shared cards count half)", au["share"] == "33.3% of the set's autos" and au["x"] == "2.0× even" and au["count"] == "1 of 3 auto cards")
+    check("the even-share tick sits in the middle and the bar is full at twice an even share", au["tick"] == 50 and au["fill"] == 100)
+    ca = metric(pg, key, "cards")
+    check("Cards: shared cards count in full on the left, half in the share", ca["big"] == "4" and ca["share"] == "26.9% of the checklist" and ca["fill"] == 81)
+    li = metric(pg, key, "live")
+    check("1/1s live: no pulls reported means no pulled line, just the rank", li["rank"] == "#1 of 6 teams")
+    check("the label keeps “1/1s” in lower case", pg.evaluate("() => document.querySelector('.group.flipped [data-metric=live] .ss-lab').innerText.startsWith('1/1s')"))
+    check("1/1s live: live of total on the left, share of the live 1/1s on the right", li["big"] == "4 of 4" and li["share"] == "31.8% of the live 1/1s" and li["count"] == "4 of 11 still out there")
+    hi = metric(pg, key, "hits")
+    check("a number the set doesn't have says so, without a bar or a rank", hi["big"] == "0" and hi["count"] == "No case hits in this set" and hi["fill"] is None and hi["rank"] == "")
+    check("the legend names the even share", "tick = an even share (1 of 6 teams)" in text)
+    check("the footer says what the numbers cover, beside Back to cards", "Whole set, every product." in text and pg.query_selector(f"{sec} .ss-foot [data-gstats]") is not None)
     pg.click("#fbtn")
     pg.click('#filters [data-f="type"][data-v="Autograph"]')
     check("changing a filter keeps the group flipped", pg.query_selector(f'.group.flipped[data-group="{key}"] .ss-panel') is not None)
@@ -468,31 +485,34 @@ def test_stats(browser):
     stats_panel(pg, key)
     pg.click('.tab[data-tab="ones"]')
     check("switching tabs drops the flip", pg.query_selector(".group.flipped") is None and not pg.evaluate("() => document.querySelector('#list').classList.contains('focus')"))
+    check("the 1/1s tab has no stats buttons", pg.query_selector(".gstats") is None and pg.query_selector(".ghwrap") is None)
     pg.close()
 
     pg = demo_page(browser, "checklist", by="player")
     pg.emulate_media(reduced_motion="reduce")
     pg.click('.gstats[data-gstats="pTemwa Chawinga"]')
     check("with reduced motion the card changes without the flip", pg.query_selector(".flip-out, .flip-in") is None and pg.query_selector(".group.flipped") is not None)
-    tc = pg.inner_text(".group.flipped .ss-panel")
-    check("grouped by player: stats rank among players", "of 9" in tile(tc, "Autos")[1] and "even share" not in tc)
+    tc = metric(pg, "pTemwa Chawinga", "autos")
+    check("grouped by player: ranks and even share are among players", tc["rank"].endswith("of 9 players") and "1 of 9 players" in pg.inner_text(".group.flipped .ss-head"))
     pg.close()
 
     team = {"on": True, "teams": [{"id": "t1", "name": "Trinity Squared", "color": "#7048E8", "players": ["Trinity Rodman", "Temwa Chawinga"]}]}
     pg = demo_page(browser, "checklist", by="team", custom=team)
-    ts = stats_panel(pg, "tTrinity Squared")
-    check("a custom team gets stats from its claimed cards", tile(ts, "Autos") == ("2", "67% of the set · #1 of 6"))
+    stats_panel(pg, "tTrinity Squared")
+    ts = metric(pg, "tTrinity Squared", "autos")
+    check("a custom team gets stats from its claimed cards", ts["big"] == "2" and ts["rank"] == "#1 of 6 teams" and ts["share"] == "66.7% of the set's autos")
     pg.click("#custbtn"); pg.uncheck("#cton"); pg.keyboard.press("Escape")
     check("turning the custom team off drops its flip", pg.query_selector(".group.flipped") is None and pg.query_selector('[data-gstats="tTrinity Squared"]') is None)
-    ws = stats_panel(pg, "tWashington Spirit")
-    check("…and the real team's stats are back", tile(ws, "Autos")[0] == "1")
+    stats_panel(pg, "tWashington Spirit")
+    check("…and the real team's stats are back", metric(pg, "tWashington Spirit", "autos")["big"] == "1")
     pg.close()
 
-    pg = demo_page(browser, "ones", by="team", w=390)
-    check("the 1/1s tab has stats buttons too, and they fit on a phone", pg.query_selector(".gstats") is not None and
-          pg.evaluate("() => [...document.querySelectorAll('.ghwrap')].every((w) => w.getBoundingClientRect().right <= innerWidth)"))
+    pg = demo_page(browser, "checklist", by="team", w=390)
+    check("stats buttons fit on a phone", pg.evaluate("() => [...document.querySelectorAll('.ghwrap')].every((w) => w.getBoundingClientRect().right <= innerWidth)"))
     stats_panel(pg, "tGotham FC")
-    check("on a phone the tiles sit two across", pg.evaluate("() => getComputedStyle(document.querySelector('.ss-tiles')).gridTemplateColumns.split(' ').length") == 2)
+    check("on a phone each row keeps the number left and the share right",
+          pg.evaluate("() => getComputedStyle(document.querySelector('.ss-row')).gridTemplateColumns.split(' ').length") == 2 and
+          pg.evaluate("() => document.querySelector('.ss-panel').getBoundingClientRect().right <= innerWidth"))
     pg.screenshot(path=str(TMP / "stats_390.png"), full_page=True)
     pg.close()
 
