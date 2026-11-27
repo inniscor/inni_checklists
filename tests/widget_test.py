@@ -234,7 +234,8 @@ def test_custom_teams(browser):
     pg = demo_page(browser, "checklist", by="team")
     got = pg.evaluate(f"() => Object.fromEntries(Object.keys({json.dumps(DOC_TINTS)}).map((c) => [c, window.__tintOf(c)]))")
     check("custom team tint matches the doc's Tint formula for all 16 club colors", got == DOC_TINTS)
-    check("no custom teams: My teams marker is off", pg.is_hidden("#ctnote") and "on" not in (pg.get_attribute("#custbtn", "class") or ""))
+    check("no custom teams: Customize shows no dot", pg.is_hidden("#custbtn .cdot") and "on" not in (pg.get_attribute("#custbtn", "class") or "").split())
+    check("there's no custom-teams line in the summary", pg.query_selector("#ctnote") is None)
     pg.close()
 
     # Override: Rodman (Washington's only player) and Chawinga (on two shared cards) move to Trinity Squared.
@@ -255,7 +256,7 @@ def test_custom_teams(browser):
     check("shared card blends the custom tint with the teammate's team", "90deg" in st and tint in st and "#D5F1F1" in st)
     heads = {h.inner_text().split("\n")[0].strip(): h.get_attribute("style") or "" for h in pg.query_selector_all("#list .ghead")}
     check("custom team header is tinted", tint in heads["Trinity Squared"])
-    check("marker shows while custom teams are in effect", pg.is_visible("#ctnote") and "on" in pg.get_attribute("#custbtn", "class"))
+    check("Customize shows its dot while custom teams are in effect", pg.is_visible("#custbtn .cdot") and "on" in pg.get_attribute("#custbtn", "class").split())
     rows = {r["Card Number"] + r["Subset"]: r for r in csv_rows(pg)}
     check("CSV: a claimed card's Team is the custom team", rows["55Base"]["Team"] == "Trinity Squared")
     check("CSV: a shared card lists both teams", rows["10Connections"]["Team"] in ("Trinity Squared / Kansas City Current", "Kansas City Current / Trinity Squared"))
@@ -264,7 +265,10 @@ def test_custom_teams(browser):
           pg.query_selector('#filters [data-f="team"][data-v="Trinity Squared"]') is not None and pg.query_selector('#filters [data-f="team"][data-v="Washington Spirit"]') is None)
     pg.click('#filters [data-f="team"][data-v="Trinity Squared"]')
     check("filtering on the custom team shows only its group", group_names(pg) == ["Trinity Squared"])
-    pg.click("#ctoff")
+    pg.click("#custbtn")
+    pg.uncheck("#cton")
+    pg.keyboard.press("Escape")
+    check("turning custom teams off removes the dot", pg.is_hidden("#custbtn .cdot"))
     names = group_names(pg)
     check("turning custom teams off restores the doc's teams", "Washington Spirit" in names and "Trinity Squared" not in names)
     st = stored_teams(pg)
