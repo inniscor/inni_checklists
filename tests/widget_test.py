@@ -234,7 +234,7 @@ def test_custom_teams(browser):
     pg = demo_page(browser, "checklist", by="team")
     got = pg.evaluate(f"() => Object.fromEntries(Object.keys({json.dumps(DOC_TINTS)}).map((c) => [c, window.__tintOf(c)]))")
     check("custom team tint matches the doc's Tint formula for all 16 club colors", got == DOC_TINTS)
-    check("no custom teams: My teams marker is off", pg.is_hidden("#ctnote") and "on" not in (pg.get_attribute("#ctbtn", "class") or ""))
+    check("no custom teams: My teams marker is off", pg.is_hidden("#ctnote") and "on" not in (pg.get_attribute("#custbtn", "class") or ""))
     pg.close()
 
     # Override: Rodman (Washington's only player) and Chawinga (on two shared cards) move to Trinity Squared.
@@ -255,7 +255,7 @@ def test_custom_teams(browser):
     check("shared card blends the custom tint with the teammate's team", "90deg" in st and tint in st and "#D5F1F1" in st)
     heads = {h.inner_text().split("\n")[0].strip(): h.get_attribute("style") or "" for h in pg.query_selector_all("#list .ghead")}
     check("custom team header is tinted", tint in heads["Trinity Squared"])
-    check("marker shows while custom teams are in effect", pg.is_visible("#ctnote") and "on" in pg.get_attribute("#ctbtn", "class"))
+    check("marker shows while custom teams are in effect", pg.is_visible("#ctnote") and "on" in pg.get_attribute("#custbtn", "class"))
     rows = {r["Card Number"] + r["Subset"]: r for r in csv_rows(pg)}
     check("CSV: a claimed card's Team is the custom team", rows["55Base"]["Team"] == "Trinity Squared")
     check("CSV: a shared card lists both teams", rows["10Connections"]["Team"] in ("Trinity Squared / Kansas City Current", "Kansas City Current / Trinity Squared"))
@@ -287,8 +287,10 @@ def test_custom_teams(browser):
 
     # Building a team in the panel.
     pg = demo_page(browser, "checklist", by="team", custom={"on": True, "teams": []})
-    pg.click("#ctbtn")
-    check("My teams opens its panel", pg.is_visible("#ctpanel"))
+    pg.click("#custbtn")
+    check("Customize opens the drawer", pg.is_visible("#ctdrawer") and pg.is_visible("#ctscrim"))
+    check("drawer sits at the right edge on desktop", pg.evaluate("() => { const r = document.querySelector('#ctdrawer').getBoundingClientRect(); return Math.round(r.right) === innerWidth && r.top === 0 && r.width <= 420; }"))
+    check("Customize sits across from the set title", pg.evaluate("() => { const b = document.querySelector('#custbtn').getBoundingClientRect(), h = document.querySelector('#sethead').getBoundingClientRect(); return b.left > h.right && Math.abs(b.top - h.top) < 30; }"))
     pg.click("#ctnew")
     check("New team focuses its name", pg.evaluate("() => document.activeElement.matches('[data-ctname]')"))
     pg.fill("[data-ctname]", "Gotham FC")
@@ -313,6 +315,9 @@ def test_custom_teams(browser):
     pg.click("#ctsharebtn")
     code = pg.input_value("#ctcode")
     check("share code is offered", code.startswith("CT1:"))
+    pg.keyboard.press("Escape")
+    check("Escape closes the drawer", pg.is_hidden("#ctdrawer"))
+    pg.click("#custbtn")
     first = pg.query_selector_all(".ctteam")[0]
     first.query_selector("[data-ctdel]").click()
     check("Delete asks once more", pg.query_selector_all(".ctteam")[0].query_selector(".ctdel.confirm") is not None)
@@ -321,7 +326,7 @@ def test_custom_teams(browser):
     pg.close()
 
     pg = demo_page(browser, "checklist", by="team", custom={"on": True, "teams": []})
-    pg.click("#ctbtn")
+    pg.click("#custbtn")
     pg.click("#ctsharebtn")
     pg.fill("#ctimport", code)
     pg.click("#ctdoimport")
@@ -329,12 +334,46 @@ def test_custom_teams(browser):
     check("importing a code brings its teams", [t["players"] for t in st["teams"]] == [[], ["Trinity Rodman"]] and "Washington Spirit" not in group_names(pg))
     pg.close()
 
+    # Each team has its own switch; the feature switch sits above them.
+    two = {"on": True, "teams": [{"id": "a", "name": "Rodmans", "color": "#7048E8", "players": ["Trinity Rodman"]},
+                                 {"id": "b", "name": "Chawingas", "color": "#D6336C", "players": ["Temwa Chawinga"], "on": False}]}
+    pg = demo_page(browser, "checklist", by="team", custom=two)
+    names = group_names(pg)
+    check("a team that's switched off doesn't claim its players", "Chawingas" not in names and "Rodmans" in names and 4 in cards_in_group(pg, "Kansas City Current"))
+    pg.click("#custbtn")
+    check("panel says Share/import", pg.inner_text("#ctsharebtn") == "Share/import")
+    check("the explanation keeps the first two sentences", pg.inner_text(".cthint") == "Claim players for a team of your own. Their cards move to your team in every view and download.")
+    pg.query_selector_all(".ctteam")[1].query_selector("[data-cton]").click()
+    pg.keyboard.press("Escape")
+    check("switching a team on applies it", "Chawingas" in group_names(pg) and 4 in cards_in_group(pg, "Chawingas"))
+    pg.click("#custbtn")
+    pg.query_selector_all(".ctteam")[0].query_selector("[data-cton]").click()
+    names = group_names(pg)
+    check("switching a team off returns its players to their teams", "Rodmans" not in names and "Washington Spirit" in names)
+    check("each team's switch is saved", [t["on"] for t in stored_teams(pg)["teams"]] == [False, True])
+    pg.uncheck("#cton")
+    check("the feature switch turns every team off", not any(n in group_names(pg) for n in ("Rodmans", "Chawingas")))
+    pg.check("#cton")
+    check("turning the feature back on restores each team's own setting", "Chawingas" in group_names(pg) and "Rodmans" not in group_names(pg))
+    pg.click("#ctsharebtn")
+    code = pg.input_value("#ctcode")
+    pg.close()
+    pg = demo_page(browser, "checklist", by="team", custom={"on": True, "teams": []})
+    pg.click("#custbtn"); pg.click("#ctsharebtn"); pg.fill("#ctimport", code); pg.click("#ctdoimport")
+    check("share codes keep each team's switch", [t["on"] for t in stored_teams(pg)["teams"]] == [False, True])
+    pg.close()
+
     # A team from another set: players missing here are kept but dimmed.
     away = {"on": True, "teams": [{"id": "t1", "name": "Mixed", "color": "#1C7ED6", "players": ["Trinity Rodman", "Alex Morgan"]}]}
     pg = demo_page(browser, "checklist", by="team", custom=away, w=390)
-    pg.click("#ctbtn")
+    pg.click("#custbtn")
+    check("drawer is a bottom sheet on a phone", pg.evaluate("() => { const r = document.querySelector('#ctdrawer').getBoundingClientRect(); return r.left === 0 && Math.round(r.bottom) === innerHeight && r.top > 0; }"))
+    check("a team with players starts closed, showing its count", "1 of 2 players in this set" in pg.inner_text(".ctteam") and pg.query_selector("[data-ctadd]") is None)
+    pg.click(".ctopen")
     check("a player not in this set is kept and dimmed", "away" in pg.get_attribute('[data-ctrm="Alex Morgan"]', "class"))
-    check("the team says how many of its players are here", "1 of 2 players in this set" in pg.inner_text(".ctteam"))
+    check("the open team still says how many of its players are here", "1 of 2 players in this set" in pg.inner_text(".ctteam"))
+    pg.click("#ctclose")
+    check("Done closes the sheet and returns focus to Customize", pg.is_hidden("#ctdrawer") and pg.evaluate("() => document.activeElement.id") == "custbtn")
     pg.screenshot(path=str(TMP / "my_teams_390.png"), full_page=True)
     pg.close()
 

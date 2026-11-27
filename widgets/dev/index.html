@@ -208,16 +208,52 @@
   .btn.ghost:hover { background: var(--surface); color: var(--ink); border-color: var(--ink); }
 
   /* My teams: the visitor's own teams, kept in this browser. The button shows a dot while they're in effect. */
-  #ctbtn.on { border-color: var(--pitch); }
-  #ctbtn.on b::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--pitch); margin: 0 4px 1px 0; }
-  .ctpanel { padding: 10px 12px 12px; }
+  /* Customize: a button in the corner opposite the set title opens a side drawer (a bottom sheet on phones).
+     My teams is its first section. A green dot on the button shows while custom teams change the view. */
+  .topbar { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .topbar .sethead { min-width: 0; }
+  .custbtn { flex: none; margin: 14px 0 0 auto; display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 6px 14px 6px 12px; font-size: 14px; font-weight: 500; cursor: pointer; }
+  .custbtn .ico { width: 16px; height: 16px; }
+  .custbtn:hover, .custbtn[aria-expanded="true"] { border-color: var(--ink); }
+  .custbtn.on { background: var(--ink); border-color: var(--ink); color: #fff; }
+  .cdot { width: 7px; height: 7px; border-radius: 50%; background: #3DDC97; }
+  .dscrim { position: fixed; inset: 0; z-index: 30; background: rgba(20, 33, 46, .28); }
+  .drawer { position: fixed; top: 0; right: 0; bottom: 0; z-index: 31; width: min(420px, 100vw); box-sizing: border-box; background: var(--surface); border-left: 1px solid var(--line); box-shadow: -12px 0 32px rgba(20, 33, 46, .14); display: flex; flex-direction: column; }
+  .dgrab { display: none; }
+  .dhead { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px 12px; border-bottom: 1px solid var(--line); }
+  .dhead h2 { margin: 0; font-family: var(--cond); font-weight: 700; font-size: 24px; }
+  .dclose { width: 36px; height: 36px; border: 0; border-radius: 8px; background: #F1F4F7; display: grid; place-items: center; cursor: pointer; }
+  .dclose .done { display: none; }
+  .dbody { flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: 14px 20px 24px; }
+  @media (max-width: 600px) {
+    .custbtn { width: 44px; height: 44px; padding: 0; justify-content: center; border-radius: 12px; position: relative; margin-top: 12px; }
+    .custbtn .lab { display: none; } .custbtn .cdot { position: absolute; top: 7px; right: 7px; }
+    .drawer { top: auto; left: 0; width: auto; max-height: 85vh; border-left: 0; border-radius: 18px 18px 0 0; box-shadow: 0 -8px 24px rgba(20, 33, 46, .18); }
+    .dgrab { display: block; width: 40px; height: 4px; border-radius: 2px; background: var(--line); margin: 8px auto 0; }
+    .dhead { border-bottom: 0; padding: 8px 16px 4px; } .dbody { padding: 4px 16px 20px; }
+    .dclose { width: auto; padding: 8px 16px; border-radius: 999px; font-weight: 600; } .dclose .ico { display: none; } .dclose .done { display: inline; }
+  }
   .cthead { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; }
+  .ctsec { display: inline-flex; align-items: center; gap: 10px; }
+  .ctsec h3 { margin: 0; font-family: var(--cond); font-weight: 700; font-size: 20px; }
+  .ctsw { flex: none; width: 26px; height: 26px; border-radius: 6px; }
+  .ctopen { flex: 1; min-width: 0; border: 0; background: none; padding: 2px 0; text-align: left; cursor: pointer; }
+  .ctopen strong { display: block; font-family: var(--cond); font-weight: 700; font-size: 19px; line-height: 1.2; }
+  .ctopen small { display: block; color: var(--muted); font-size: 12.5px; }
+  .ctchev { flex: none; width: 32px; height: 32px; border: 0; background: none; border-radius: 6px; display: grid; place-items: center; color: var(--muted); cursor: pointer; }
+  .ctchev .ico { transition: transform .15s; transform: rotate(90deg); } .ctchev[aria-expanded="true"] .ico { transform: rotate(-90deg); }
+  .ctchev:hover { background: var(--bg); }
+  .ctmetarow { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-top: 8px; }
+  .ctmetarow .ctmeta { margin: 0; }
+  .ctnew { border: 1px dashed #A9B4BF; }
   .cthint { color: var(--muted); font-size: 13px; margin: 6px 0 2px; }
   .switch { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; cursor: pointer; }
   .switch input { appearance: none; width: 34px; height: 20px; border-radius: 999px; background: var(--line); position: relative; margin: 0; cursor: pointer; transition: background .15s; }
   .switch input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform .15s; box-shadow: 0 1px 2px rgba(20,33,46,.3); }
   .switch input:checked { background: var(--pitch); } .switch input:checked::after { transform: translateX(14px); }
   .ctteam { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px 10px; margin-top: 10px; }
+  .ctteam.off .ctplayers, .ctteam.off .ctname, .ctteam.off input[type=color], .ctteam.off .ctsw, .ctteam.off .ctopen strong { opacity: .5; }
+  .switch.sm input { width: 28px; height: 16px; } .switch.sm input::after { width: 12px; height: 12px; } .switch.sm input:checked::after { transform: translateX(12px); }
   .ctrow { display: flex; align-items: center; gap: 8px; }
   .ctrow input[type=color] { flex: none; width: 30px; height: 30px; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: none; cursor: pointer; }
   .ctname { flex: 1; min-width: 0; padding: 5px 8px; border: 1px solid transparent; border-radius: 6px; background: transparent; font-family: var(--cond); font-weight: 700; font-size: 19px; }
@@ -234,13 +270,17 @@
   .ctshare { margin-top: 10px; display: grid; gap: 6px; }
   .ctshare textarea { width: 100%; min-height: 56px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; font: 12.5px/1.4 ui-monospace, monospace; resize: vertical; }
   .ctshare .row { margin-top: 0; }
+  .ctpanel.alloff .ctteam { opacity: .6; }
   .ctnote { font-size: 13px; color: var(--pitch); font-weight: 600; }
 </style>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><linearGradient id="rainbow" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF5E7E"/><stop offset=".25" stop-color="#FFB547"/><stop offset=".5" stop-color="#5EE6A8"/><stop offset=".75" stop-color="#5AB8FF"/><stop offset="1" stop-color="#B07CFF"/></linearGradient></defs></svg>
 <div class="wrap">
+  <div class="topbar">
   <header class="sethead" id="sethead" hidden></header>
+  <button class="custbtn" id="custbtn" aria-haspopup="dialog" aria-expanded="false" aria-controls="ctdrawer"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4.5h7m3 0h1M2.5 11.5h2m3 0h6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="11" cy="4.5" r="1.6" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="6" cy="11.5" r="1.6" fill="none" stroke="currentColor" stroke-width="1.6"/></svg><span class="lab">Customize</span><span class="cdot" hidden></span></button>
+  </div>
   <div class="tabbar">
     <div class="tabs" role="tablist">
       <button class="tab" role="tab" data-tab="checklist">Checklist<span class="n" id="n-checklist"></span></button>
@@ -254,11 +294,9 @@
   </div>
   <div class="row" id="activebar">
     <button class="fbtn" id="fbtn" aria-expanded="false" aria-controls="filters"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4.5h7m3 0h1M2.5 11.5h2m3 0h6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="11" cy="4.5" r="1.6" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="6" cy="11.5" r="1.6" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Filters<b id="fcount"></b><span class="chev" aria-hidden="true"><svg class="ico" viewBox="0 0 12 12"><path d="M4.5 2.5 8 6l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
-    <button class="fbtn" id="ctbtn" aria-expanded="false" aria-controls="ctpanel"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><circle cx="6" cy="5.2" r="2.3" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M1.8 13.2c.5-2.4 2.2-3.7 4.2-3.7s3.7 1.3 4.2 3.7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M12.2 4.6v4.2M10.1 6.7h4.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>My teams<b id="ctcount"></b><span class="chev" aria-hidden="true"><svg class="ico" viewBox="0 0 12 12"><path d="M4.5 2.5 8 6l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
     <span class="row" id="chips" style="margin:0"></span><button class="link" id="clear" hidden>Clear all</button>
   </div>
   <div class="fpanel" id="filters" hidden></div>
-  <div class="fpanel ctpanel" id="ctpanel" hidden></div>
   <datalist id="ctplayers"></datalist>
   </div>
   <div class="summary">
@@ -270,6 +308,12 @@
   <footer class="foot" id="foot" hidden><button class="btn ghost totop" id="totop"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 13V4m0 0L4.5 7.5M8 4l3.5 3.5M3 2.5h10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Back to top</button></footer>
 </div>
 <button class="fab totop" id="fab" aria-label="Back to top"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 13V4m0 0L4.5 7.5M8 4l3.5 3.5M3 2.5h10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Top</span></button>
+<div class="dscrim" id="ctscrim" hidden></div>
+<aside class="drawer" id="ctdrawer" role="dialog" aria-modal="true" aria-labelledby="ctdtitle" hidden>
+  <div class="dgrab" aria-hidden="true"></div>
+  <div class="dhead"><h2 id="ctdtitle">Customize</h2><button class="dclose" id="ctclose" aria-label="Close"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M3.6 3.6l4.8 4.8m0-4.8-4.8 4.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span class="done">Done</span></button></div>
+  <div class="dbody ctpanel" id="ctpanel"></div>
+</aside>
 <div class="toast" id="toast" role="status"></div>
 
 <script>
@@ -316,7 +360,8 @@
     f: { type: new Set(), team: new Set(), subset: new Set(), product: new Set(), status: new Set() },
     players: new Set(),
     panelOpen: false,                               // filters panel
-    ctOpen: false, ctShare: false, ctConfirm: null, ctFocus: null, // My teams panel
+    ctOpen: false, ctShare: false, ctConfirm: null, ctFocus: null, // Customize drawer (My teams)
+    ctExp: new Map(),                               // team id -> expanded in the drawer (default: only teams with no players)
     sug: [], sugIdx: -1,                            // player suggestions under the search box
     groupBy: store.get('groupBy', { checklist: 'team', ones: 'team' }),
     taps: { checklist: new Map(), ones: new Map() }, // groups the visitor opened/closed, per view
@@ -391,6 +436,7 @@
       name: String(t && t.name || '').trim(),
       color: /^#[0-9a-f]{6}$/i.test(t && t.color) ? t.color : CT_COLORS[i % CT_COLORS.length],
       players: [...new Set((Array.isArray(t && t.players) ? t.players : []).map((p) => String(p).trim()).filter(Boolean))],
+      on: !(t && t.on === false),
     })).filter((t) => t.name);
     return { on: raw.on !== false, teams };
   }
@@ -430,9 +476,11 @@
 
   function applyCustomTeams() {
     const claims = new Map();
-    if (CT.on) for (const t of CT.teams) for (const p of t.players) claims.set(norm(p), t.name);
+    // The switch at the top turns every custom team off; each team also has its own switch.
+    const live = CT.on ? CT.teams.filter((t) => t.on) : [];
+    for (const t of live) for (const p of t.players) claims.set(norm(p), t.name);
     D.teamTint = new Map(D.baseTint);
-    if (CT.on) for (const t of CT.teams) { const x = tintOf(t.color); if (x) D.teamTint.set(t.name, x); }
+    for (const t of live) { const x = tintOf(t.color); if (x) D.teamTint.set(t.name, x); }
     D.customNames = new Set();
     // Which of a shared card's teams an unclaimed player brings: her own team when it's on the card, else the team in
     // her position (when there's one team per player), else all of the card's teams.
@@ -470,9 +518,10 @@
   function newTeam() {
     let i = CT.teams.length + 1, name;
     do { name = 'My team' + (i > 1 ? ' ' + i : ''); i++; } while (nameTaken(name));
-    const t = { id: 'ct' + Date.now().toString(36), name, color: CT_COLORS[CT.teams.length % CT_COLORS.length], players: [] };
+    const t = { id: 'ct' + Date.now().toString(36), name, color: CT_COLORS[CT.teams.length % CT_COLORS.length], players: [], on: true };
     CT.teams.push(t); CT.on = true;
     S.ctFocus = { id: t.id, field: 'name' };
+    S.ctExp.set(t.id, true);
     ctChanged();
   }
   // Claim a player for a team; she leaves any other custom team (a player is on one custom team at most).
@@ -501,7 +550,7 @@
   }
 
   // Share codes: the teams as base64 JSON ("CT1:…"), for backup and for passing a team to someone else.
-  const exportCode = () => 'CT1:' + btoa(unescape(encodeURIComponent(JSON.stringify({ teams: CT.teams.map((t) => ({ n: t.name, c: t.color, p: t.players })) }))));
+  const exportCode = () => 'CT1:' + btoa(unescape(encodeURIComponent(JSON.stringify({ teams: CT.teams.map((t) => ({ n: t.name, c: t.color, p: t.players, ...(t.on ? {} : { o: false }) })) }))));
   function importCode(code) {
     let data;
     try { data = JSON.parse(decodeURIComponent(escape(atob(String(code).trim().replace(/^CT1:/, ''))))); } catch (e) { toast('That code isn’t a custom teams code'); return; }
@@ -513,11 +562,12 @@
       let t = CT.teams.find((y) => norm(y.name) === norm(name));
       if (!t) {
         if ([...D.baseTeamNames].some((b) => norm(b) === norm(name))) name += ' (custom)';
-        t = { id: 'ct' + Date.now().toString(36) + CT.teams.length, name, color: CT_COLORS[CT.teams.length % CT_COLORS.length], players: [] };
+        t = { id: 'ct' + Date.now().toString(36) + CT.teams.length, name, color: CT_COLORS[CT.teams.length % CT_COLORS.length], players: [], on: true };
         CT.teams.push(t);
       }
       if (/^#[0-9a-f]{6}$/i.test(x.c)) t.color = x.c;
       t.players = players;
+      t.on = x.o !== false;
       // The imported team wins any player it shares with another custom team.
       const ks = new Set(players.map(norm));
       for (const y of CT.teams) if (y !== t) y.players = y.players.filter((p) => !ks.has(norm(p)));
@@ -622,7 +672,7 @@
     $('#q').oninput = (e) => { S.q = e.target.value.trim().toLowerCase(); S.sugIdx = -1; render(); };
     $('#q').onkeydown = onSearchKey;
     $('#q').onfocus = () => renderSuggest();
-    $('#fbtn').onclick = () => { S.panelOpen = !S.panelOpen; if (S.panelOpen) S.ctOpen = false; renderFilters(); renderCustomTeams(); };
+    $('#fbtn').onclick = () => { S.panelOpen = !S.panelOpen; renderFilters(); };
     bindCustomTeams();
     const togglePill = (e) => {
       const b = e.target.closest('[data-f]'); if (!b) return false;
@@ -680,61 +730,104 @@
     if (e && e.detail === 0) document.querySelector('.tab[aria-selected="true"]')?.focus({ preventScroll: true });
   }
 
-  // ---------- My teams panel ----------
-  // One card per custom team: color, name (edit in place), claimed players as removable chips (dimmed when they're not
-  // in this set), and a box to claim another player from this set. The switch turns every custom team off without
-  // deleting them. The panel and the Filters panel take turns being open.
-  // soft: called from a general render; leaves the panel alone while the visitor is typing in it.
+  // ---------- Customize drawer: My teams ----------
+  // The Customize button (top right, across from the set title) opens a side drawer, or a bottom sheet on phones.
+  // My teams is its first section: a switch for the whole feature, then one card per custom team with its own switch,
+  // color and name. A card opens to edit its players (removable chips, dimmed when they're not in this set, and a box
+  // to claim another player from this set) or delete the team. Cards start closed, except a team with no players yet.
+  // soft: called from a general render; leaves the drawer alone while the visitor is typing in it.
+  const teamCards = (name) => D.cards.reduce((n, c) => n + (c.teams.includes(name) ? 1 : 0), 0);
+  function teamMeta(t, inSet) {
+    const n = t.players.length, here = t.players.filter((p) => inSet.has(norm(p))).length;
+    const who = !n ? 'No players yet' : here === n ? `${n} player${n === 1 ? '' : 's'}` : `${here} of ${n} players in this set`;
+    if (!CT.on || !t.on) return (t.on ? '' : 'Off · ') + who;
+    const k = teamCards(t.name);
+    return who + (k ? ` · ${k} card${k === 1 ? '' : 's'}` : '');
+  }
   function renderCustomTeams(soft) {
-    const btn = $('#ctbtn'), panel = $('#ctpanel');
+    const btn = $('#custbtn'), drawer = $('#ctdrawer'), panel = $('#ctpanel');
     const active = ctActive();
     btn.classList.toggle('on', active);
+    btn.querySelector('.cdot').hidden = !active;
     btn.setAttribute('aria-expanded', S.ctOpen);
-    $('#ctcount').textContent = CT.teams.length ? ' ' + CT.teams.length : '';
-    btn.setAttribute('aria-label', `My teams${CT.teams.length ? `, ${CT.teams.length}` : ''}${active ? ', in effect' : ''}`);
+    btn.setAttribute('aria-label', 'Customize' + (active ? ', custom teams on' : ''));
     const note = $('#ctnote');
     note.hidden = !active;
     if (active) note.innerHTML = `Custom teams on · <button class="link" id="ctoff" style="padding:0">turn off</button>`;
-    panel.hidden = !S.ctOpen;
+    drawer.hidden = $('#ctscrim').hidden = !S.ctOpen;
     if (!S.ctOpen) return;
-    if (soft && !S.ctDirty && panel.contains(document.activeElement) && panel.childElementCount) return;
+    if (soft && !S.ctDirty && drawer.contains(document.activeElement) && panel.childElementCount) return;
     S.ctDirty = false;
     $('#ctplayers').innerHTML = D.players.map((p) => `<option value="${esc(p)}">`).join('');
     const inSet = new Set(D.players.map(norm));
     const teamsHtml = CT.teams.map((t) => {
-      const here = t.players.filter((p) => inSet.has(norm(p))).length;
+      const open = S.ctExp.has(t.id) ? S.ctExp.get(t.id) : !t.players.length;
       const tint = tintOf(t.color) || '';
+      const meta = esc(teamMeta(t, inSet));
+      const chev = `<button class="ctchev" data-cttoggle aria-expanded="${open}" aria-label="${open ? 'Close' : 'Open'} ${esc(t.name)}">${ICON.chev}</button>`;
+      const sw = `<label class="switch sm" title="${t.on ? 'On' : 'Off'}"><input type="checkbox" data-cton ${t.on ? 'checked' : ''} aria-label="Use ${esc(t.name)}"></label>`;
+      if (!open) return `<div class="ctteam${t.on ? '' : ' off'}" data-ct="${esc(t.id)}"><div class="ctrow">${sw}
+        <span class="ctsw" style="background:${esc(t.color)}" aria-hidden="true"></span>
+        <button class="ctopen" data-cttoggle aria-expanded="false"><strong>${esc(t.name)}</strong><small>${meta}</small></button>${chev}</div></div>`;
       const chips = t.players.map((p) => { const away = !inSet.has(norm(p));
         return `<button class="chip ctp${away ? ' away' : ''}" style="--blk:${tint}" data-ctrm="${esc(p)}" aria-label="Remove ${esc(p)} from ${esc(t.name)}"${away ? ' title="Not in this set"' : ''}>${esc(p)}<span aria-hidden="true">${ICON.x}</span></button>`; }).join('');
       const confirming = S.ctConfirm === t.id;
-      return `<div class="ctteam" data-ct="${esc(t.id)}">
-        <div class="ctrow"><input type="color" value="${esc(t.color)}" data-ctcolor aria-label="Color for ${esc(t.name)}">
-          <input class="ctname" value="${esc(t.name)}" data-ctname aria-label="Team name" maxlength="40">
-          <button class="link ctdel${confirming ? ' confirm' : ''}" data-ctdel>${confirming ? 'Delete team?' : 'Delete'}</button>${confirming ? '<button class="link" data-ctkeep>Keep</button>' : ''}</div>
+      return `<div class="ctteam${t.on ? '' : ' off'}" data-ct="${esc(t.id)}">
+        <div class="ctrow">${sw}<input type="color" value="${esc(t.color)}" data-ctcolor aria-label="Color for ${esc(t.name)}">
+          <input class="ctname" value="${esc(t.name)}" data-ctname aria-label="Team name" maxlength="40">${chev}</div>
         ${chips ? `<div class="ctplayers">${chips}</div>` : ''}
         <div class="ctadd"><input list="ctplayers" placeholder="Add a player from this set" aria-label="Add a player to ${esc(t.name)}" data-ctadd autocomplete="off"><button class="btn ghost" data-ctaddbtn>Add</button></div>
-        <span class="ctmeta">${t.players.length ? `${here} of ${t.players.length} player${t.players.length === 1 ? '' : 's'} in this set` : 'No players yet'}</span>
+        <div class="ctmetarow"><span class="ctmeta">${meta}</span><span><button class="link ctdel${confirming ? ' confirm' : ''}" data-ctdel>${confirming ? 'Delete team?' : 'Delete team'}</button>${confirming ? '<button class="link" data-ctkeep>Keep</button>' : ''}</span></div>
       </div>`;
     }).join('');
-    panel.innerHTML = `<div class="cthead"><label class="switch"><input type="checkbox" id="cton" ${CT.on ? 'checked' : ''}>Use my teams</label>
-        <button class="link" id="ctsharebtn" aria-expanded="${S.ctShare}">Share or import</button></div>
-      <p class="cthint">Claim players for a team of your own. Their cards move to your team in every view and download. Saved in this browser only, never in the checklist, and shared by every set.</p>
+    // Redrawing replaces the controls; keep keyboard focus on the same one (by id) when it had it.
+    const keep = panel.contains(document.activeElement) ? document.activeElement.id : '';
+    panel.classList.toggle('alloff', !CT.on);
+    panel.innerHTML = `<div class="cthead"><span class="ctsec"><label class="switch"><input type="checkbox" id="cton" ${CT.on ? 'checked' : ''} aria-labelledby="ctsech"></label><h3 id="ctsech">My teams</h3></span>
+        <button class="link" id="ctsharebtn" aria-expanded="${S.ctShare}">Share/import</button></div>
+      <p class="cthint">Claim players for a team of your own. Their cards move to your team in every view and download.</p>
       ${S.ctShare ? `<div class="ctshare"><label class="flabel" for="ctcode">Your teams as a code</label><textarea id="ctcode" readonly>${esc(CT.teams.length ? exportCode() : '')}</textarea>
         <span class="row"><button class="btn ghost" id="ctcopy" ${CT.teams.length ? '' : 'disabled'}>Copy code</button></span>
         <label class="flabel" for="ctimport">Paste a code to add its teams</label><textarea id="ctimport" placeholder="CT1:…"></textarea>
         <span class="row"><button class="btn ghost" id="ctdoimport">Import</button></span></div>` : ''}
       ${teamsHtml}
-      <div class="ctfoot"><button class="btn ghost" id="ctnew">+ New team</button></div>`;
+      <div class="ctfoot"><button class="btn ghost ctnew" id="ctnew">+ New team</button></div>`;
     if (S.ctFocus) {
       const f = S.ctFocus; S.ctFocus = null;
       const el = panel.querySelector(`[data-ct="${CSS.escape(f.id)}"] [data-ct${f.field}]`);
       if (el) { el.focus(); if (f.field === 'name') el.select(); }
-    }
+    } else if (keep) panel.querySelector('#' + CSS.escape(keep))?.focus();
+    if (!drawer.contains(document.activeElement)) $('#ctclose').focus();
+  }
+  function openDrawer() {
+    S.ctOpen = true; S.ctConfirm = null; S.ctDirty = true;
+    renderCustomTeams();
+    document.documentElement.style.overflow = 'hidden';
+    $('#ctclose').focus();
+  }
+  function closeDrawer() {
+    if (!S.ctOpen) return;
+    S.ctOpen = false; S.ctConfirm = null;
+    renderCustomTeams();
+    document.documentElement.style.overflow = '';
+    $('#custbtn').focus();
   }
   function bindCustomTeams() {
-    const panel = $('#ctpanel');
-    $('#ctbtn').onclick = () => { S.ctOpen = !S.ctOpen; if (S.ctOpen) S.panelOpen = false; S.ctConfirm = null; renderFilters(); renderCustomTeams(); };
-    $('#ctnote').onclick = (e) => { if (e.target.closest('#ctoff')) { CT.on = false; ctChanged(); toast('Custom teams off. Turn them back on under My teams.'); } };
+    const panel = $('#ctpanel'), drawer = $('#ctdrawer');
+    $('#custbtn').onclick = () => S.ctOpen ? closeDrawer() : openDrawer();
+    $('#ctclose').onclick = closeDrawer;
+    $('#ctscrim').onclick = closeDrawer;
+    // Escape closes; Tab stays inside the drawer while it's open.
+    document.addEventListener('keydown', (e) => { if (S.ctOpen && e.key === 'Escape') { e.preventDefault(); closeDrawer(); } });
+    drawer.addEventListener('keydown', (e) => {
+      if (e.key !== 'Tab') return;
+      const f = [...drawer.querySelectorAll('button, input, textarea, a[href]')].filter((n) => !n.disabled && n.offsetParent !== null);
+      if (!f.length) return;
+      const i = f.indexOf(document.activeElement);
+      if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); }
+      else if (!e.shiftKey && i === f.length - 1) { e.preventDefault(); f[0].focus(); }
+    });
+    $('#ctnote').onclick = (e) => { if (e.target.closest('#ctoff')) { CT.on = false; ctChanged(); toast('Custom teams off. Turn them back on under Customize.'); } };
     const teamOf = (el) => el.closest('[data-ct]')?.dataset.ct;
     panel.addEventListener('click', (e) => {
       const t = e.target;
@@ -749,6 +842,8 @@
       }
       const id = teamOf(t); if (!id) return;
       const team = CT.teams.find((x) => x.id === id); if (!team) return;
+      const tg = t.closest('[data-cttoggle]');
+      if (tg) { const open = tg.getAttribute('aria-expanded') !== 'true'; S.ctExp.set(id, open); S.ctConfirm = null; S.ctFocus = { id, field: 'toggle' }; return renderCustomTeams(); }
       const rm = t.closest('[data-ctrm]');
       if (rm) { team.players = team.players.filter((p) => p !== rm.dataset.ctrm); S.ctFocus = { id, field: 'add' }; return ctChanged(); }
       if (t.closest('[data-ctaddbtn]')) return claimPlayer(id, t.closest('[data-ct]').querySelector('[data-ctadd]').value);
@@ -764,6 +859,7 @@
       if (t.id === 'cton') { CT.on = t.checked; return ctChanged(); }
       const id = teamOf(t); if (!id) return;
       const team = CT.teams.find((x) => x.id === id); if (!team) return;
+      if (t.matches('[data-cton]')) { team.on = t.checked; return ctChanged(); }
       if (t.matches('[data-ctcolor]')) { team.color = t.value; return ctChanged(); }
       if (t.matches('[data-ctname]')) return renameTeam(id, t.value);
       // Picking a name from the list (or leaving the box) claims the player, if it's an exact match.

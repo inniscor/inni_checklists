@@ -5,12 +5,14 @@ All changes to the checklist widget, newest first. **Unreleased** describes what
 ## Unreleased
 
 ### Added
-- **My teams**: visitors can make their own teams and claim players for them. The button next to **Filters** opens a panel to create a team (name and color), claim players from the set by name, remove them, delete a team, and turn all custom teams off without deleting them.
+- **Customize**: a button in the top-right corner, across from the set title, opens a side drawer (a bottom sheet with **Done** on phones). Escape, the close button or a tap outside closes it, and focus returns to the button.
+- **My teams**, the drawer's first section: visitors can make their own teams and claim players for them. A switch turns the whole feature off without deleting anything. Each team is a card with its own switch, color and name, and the player and card counts; it opens to edit the name and color, claim players from the set by name, remove them, or delete the team. Cards start closed, except a team with no players yet.
 - Custom teams **override** the doc: a claimed player's cards leave her real team for the custom one in every view (grouping, Team filter, team shading, search, the 1/1s tab) and in CSV downloads. On a shared card, each player brings her own team: with one player claimed, the card lists the custom team and the other player's team (shown under both, blended tile, half credit); with every player claimed, it belongs only to the custom team. A real team that loses all its players drops out of the list. Custom teams are listed first.
 - A player is on one custom team at most; claiming her for another moves her (with a notice). A custom team can't take a real team's name.
 - Custom teams are saved in the browser only (`localStorage`, key `cl:customTeams`), never in the doc. Every set's widget shares them, so a team made in one checklist appears in the others with whichever of its players are in that set (the rest are shown dimmed). Other widgets on the same site pick up changes through the `storage` event.
-- **Share or import**: the teams as a `CT1:` code to copy, and a box to paste a code. Imported teams replace custom teams of the same name.
-- While custom teams change the view, the button shows a green dot and the summary line reads **Custom teams on · turn off**.
+- **Share/import**: the teams as a `CT1:` code to copy, and a box to paste a code. Imported teams replace custom teams of the same name.
+- While custom teams change the view, the **Customize** button turns dark with a green dot and the summary line reads **Custom teams on · turn off**.
+- Each custom team has its own on/off switch, beside the switch for the whole feature. A team that's off keeps its players but doesn't claim them; turning the feature back on restores each team's own setting. Share codes keep each team's switch.
 - The custom team's tint uses the same calculation as the Teams table's `Tint` formula (checked against the 16 NWSL club tints).
 
 ### Requires
