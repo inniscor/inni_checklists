@@ -5,6 +5,16 @@ All changes to the checklist widget, newest first. **Unreleased** describes what
 ## Unreleased
 
 ### Added
+- **Dashboard** (`dashboard.html`, beside the checklist): the set's teams, ranked. Tabs **Default** and **Break** (Break is shown but not available yet). A search box and a **Rank by** pill (Autos, Case hits, 1/1s live, Cards); no filters. Each team card is tinted with its color and shows its rank, its name, the other three numbers, and the ranked number with its share of the set (bar with an even-share tick in the middle).
+- Clicking a team opens its players, ranked the same way, each showing her rank across the whole set and her own share bar. Players sit under their team (or their custom team).
+- Chart buttons on teams and players flip the whole team card to the stats card (the same one as the checklist): the team's stats, or that player's, with her name on top. The rest of the list dims until it flips back (chart button, **Back to the list**, Escape or a click on the dimmed list). Read-only.
+- Search: typing a team's name shows that team; typing a player's name shows her team, open, with only the matching players. Matching players are offered in a dropdown to pin as chips: pinned players show only their teams, open, with only them, so several players can be compared. **Clear all** removes the chips.
+- The dashboard has the same **Customize** button and drawer as the checklist, so My teams can be edited from either page; both read the same saved teams, so a change in one shows in the other.
+
+### Changed
+- My teams (custom teams and the Customize drawer) moved into a shared file, `lib/teams.js`, used by the checklist and the dashboard. No change in how it works.
+
+### Added
 - **Stats** (Checklist tab): a chart button at the right end of every team and player group header (grouped by Team or Player) flips that group's card over to show its stats where its cards were, opening the group if it was closed. Four rows, one per top-line number: **Autos**, **Case hits**, **1/1s live** and **Cards**. Each shows the number and its rank on the left, and its share of the set on the right: a percentage, a bar whose middle tick is an even share (1 of the teams or players; full at twice that), how many times an even share it is, and the count behind it. A number the set doesn't have (e.g. no case hits) says so, with no bar or rank.
 - While a card is flipped, the rest of the list is dimmed and can't be used, and the flipped group can't be collapsed. Filters still work and the numbers follow the Product filter (one product chosen → that product only; other filters don't change them). The chart button, **Back to cards**, Escape or a click on the dimmed list flips it back, showing the group's cards. One group at a time; switching tabs or grouping drops the flip. With reduced motion the card changes without the flip.
 - Custom teams get stats like any team.

@@ -58,6 +58,138 @@ def demo_page(browser, tab="checklist", by="subset", w=760, h=900, demo=None, se
     return pg
 
 
+DASH = WIDGET.parent / "dashboard.html"
+
+
+def dash_page(browser, w=760, h=900, demo=None, custom=None, doc="pCMKPajFwTiuzyVLySNiMT"):
+    """The dashboard (dashboard.html beside the widget) in demo mode, like demo_page."""
+    js = ("localStorage.clear();"
+          f"window.DEMO_DATA={json.dumps(demo or DEMO)};window.DEMO_SETS={json.dumps(SETS)};"
+          f"window.DEMO_DOC_ID={json.dumps(doc)};window.DEMO_DOC_NAME='Checklist Sandbox';")
+    if custom is not None:
+        js += f"localStorage.setItem('cl:customTeams',{json.dumps(json.dumps(custom))});"
+    f = TMP / f"dash_{w}.html"
+    f.write_text(DASH.read_text().replace(PLUGIN_TAG, f"<script>{js}</script>").replace('src="lib/', f'src="{(WIDGET.parent / "lib").as_uri()}/'))
+    pg = browser.new_page(viewport={"width": w, "height": h}, device_scale_factor=2)
+    pg.set_default_timeout(5000)
+    pg.on("pageerror", lambda e: page_errors.append(str(e)))
+    pg.goto(f.as_uri())
+    pg.wait_for_selector("#list .group")
+    return pg
+
+
+def dash_rows(pg):
+    return pg.evaluate("() => [...document.querySelectorAll('#list .group')].map((g) => ({ name: g.querySelector('.ghwrap .who strong').textContent, rank: g.querySelector('.ghwrap .rk').textContent, value: g.querySelector('.ghwrap .val b').textContent.replace(/\\s+/g, ' ').trim(), open: g.querySelector('.rowmain').getAttribute('aria-expanded') === 'true' }))")
+
+
+def dash_players(pg, team):
+    return pg.evaluate("(t) => [...document.querySelectorAll(`#list .group[data-group=\"${CSS.escape(t)}\"] .prow`)].map((r) => ({ name: r.querySelector('.who strong')?.textContent, rank: r.querySelector('.rk')?.textContent }))", team)
+
+
+def dash_flip(pg, team, player=None):
+    sel = f'.gstats[data-flip="{team}"]' + (f'[data-player="{player}"]' if player else ':not([data-player])')
+    pg.wait_for_function("() => !document.querySelector('.flip-out, .flip-in')")
+    pg.click(sel)
+    pg.wait_for_selector(f'.group.flipped[data-group="{team}"] .ss-panel')
+    pg.wait_for_function("() => !document.querySelector('.flip-out, .flip-in')")
+
+
+def dash_back(pg, how="escape"):
+    if how == "escape":
+        pg.keyboard.press("Escape")
+    else:
+        pg.click(".group.flipped .ss-foot [data-flip]")
+    pg.wait_for_function("() => !document.querySelector('.group.flipped') && !document.querySelector('.flip-out, .flip-in')")
+
+
+def test_dashboard(browser):
+    if not DASH.exists():
+        return
+    pg = dash_page(browser)
+    check("dashboard: title from sets.json", pg.inner_text("#settitle") == "Prizm Black")
+    check("dashboard: Default tab selected, Break shown but disabled",
+          pg.get_attribute("#tab-default", "aria-selected") == "true" and pg.is_disabled("#tab-break"))
+    pg.click("#tab-break", force=True)
+    check("dashboard: clicking Break does nothing", pg.get_attribute("#tab-default", "aria-selected") == "true")
+    check("dashboard: no filters and no Group by, just search and Rank by",
+          pg.query_selector("#fbtn, #filters, #groupby") is None and pg.is_visible("#q") and pg.is_visible("#rankby"))
+    rows = dash_rows(pg)
+    check("dashboard: teams ranked by autos (ties broken by numbered copies, then name)",
+          [r["name"] for r in rows] == ["Kansas City Current", "Angel City FC", "Washington Spirit", "Gotham FC", "Houston Dash", "Portland Thorns FC"])
+    check("dashboard: each team shows its rank and the ranked number, closed", rows[0]["rank"] == "1" and rows[0]["value"] == "1" and not any(r["open"] for r in rows))
+    check("dashboard: team cards are tinted with their color", "#D5F1F1" in (pg.get_attribute('.group[data-group="Kansas City Current"] .ghwrap', "style") or "").upper())
+    check("dashboard: the share bar's even-share tick sits in the middle",
+          pg.evaluate("() => { const m = document.querySelector('.meter'), t = m.querySelector('.even'); return Math.round(100 * (t.getBoundingClientRect().left + 1 - m.getBoundingClientRect().left) / m.getBoundingClientRect().width); }") == 50)
+    pg.click('.rowmain[data-toggle="Kansas City Current"]')
+    kc = dash_players(pg, "Kansas City Current")
+    check("dashboard: clicking a team opens its players, ranked the same way", [p["name"] for p in kc] == ["Temwa Chawinga", "Croix Bethune"])
+    check("dashboard: player ranks are across the whole set", kc[0]["rank"] == "1" and kc[1]["rank"] != "2")
+    check("dashboard: each player has a chart button", pg.query_selector('.prow .gstats[data-player="Temwa Chawinga"]') is not None)
+    pg.click('.rowmain[data-toggle="Kansas City Current"]')
+    check("dashboard: clicking it again closes it", dash_players(pg, "Kansas City Current") == [])
+    pg.click('#rankby [data-metric="cards"]')
+    check("dashboard: Rank by Cards reorders (shared cards count half)", dash_rows(pg)[0]["name"] == "Gotham FC")
+    pg.click('#rankby [data-metric="autos"]')
+
+    dash_flip(pg, "Kansas City Current")
+    check("dashboard: the team's chart button flips the card to the team's stats", metric(pg, "Kansas City Current", "autos")["share"] == "33.3% of the set's autos")
+    check("dashboard: the rest of the list dims and can't be used", pg.evaluate("() => [...document.querySelectorAll('#list .group:not(.flipped)')].every((g) => g.inert)"))
+    dash_back(pg)
+    pg.click('.rowmain[data-toggle="Kansas City Current"]')
+    dash_flip(pg, "Kansas City Current", "Temwa Chawinga")
+    banner = pg.inner_text('.group.flipped .pbanner')
+    tc = metric(pg, "Kansas City Current", "autos")
+    check("dashboard: a player's chart button flips the whole team card to her stats", "Temwa Chawinga" in banner and tc["rank"].endswith("of 9 players"))
+    check("dashboard: the flipped card hides the player rows", pg.query_selector(".group.flipped .prow") is None)
+    dash_back(pg, "button")
+    check("dashboard: Back to the list returns to the open team", [p["name"] for p in dash_players(pg, "Kansas City Current")] == ["Temwa Chawinga", "Croix Bethune"])
+
+    pg.fill("#q", "rodman")
+    check("dashboard: typing a player's name shows her team, open, with only her",
+          [r["name"] for r in dash_rows(pg)] == ["Washington Spirit"] and [p["name"] for p in dash_players(pg, "Washington Spirit")] == ["Trinity Rodman"])
+    pg.fill("#q", "gotham")
+    check("dashboard: typing a team's name shows the team as it is", [r["name"] for r in dash_rows(pg)] == ["Gotham FC"] and not dash_rows(pg)[0]["open"])
+    pg.fill("#q", "zzz")
+    check("dashboard: no match says so", "No teams or players match" in pg.inner_text("#list"))
+    pg.fill("#q", "esth")
+    check("dashboard: typing offers players to pin", pg.query_selector('#suggest [data-pin="Esther Gonzalez"]') is not None)
+    pg.click('#suggest [data-pin="Esther Gonzalez"]')
+    check("dashboard: a pinned player shows as a chip and clears the search", pg.query_selector('#chips [data-unpin="Esther Gonzalez"]') is not None and pg.input_value("#q") == "")
+    check("dashboard: pinned: only her team, open, with only her",
+          [r["name"] for r in dash_rows(pg)] == ["Gotham FC"] and [p["name"] for p in dash_players(pg, "Gotham FC")] == ["Esther Gonzalez"])
+    pg.fill("#q", "temwa")
+    pg.press("#q", "ArrowDown")
+    pg.press("#q", "Enter")
+    check("dashboard: pin a second player from the keyboard; both teams show",
+          [r["name"] for r in dash_rows(pg)] == ["Kansas City Current", "Gotham FC"] and [p["name"] for p in dash_players(pg, "Kansas City Current")] == ["Temwa Chawinga"])
+    pg.click('#chips [data-unpin="*"]')
+    check("dashboard: Clear all brings every team back", len(dash_rows(pg)) == 6 and pg.is_hidden("#chips"))
+    pg.close()
+
+    team = {"on": True, "teams": [{"id": "t1", "name": "Trinity Squared", "color": "#7048E8", "players": ["Trinity Rodman", "Temwa Chawinga"]}]}
+    pg = dash_page(browser, custom=team)
+    rows = dash_rows(pg)
+    check("dashboard: custom teams apply (Trinity Squared leads on autos, Washington is gone)",
+          rows[0]["name"] == "Trinity Squared" and rows[0]["value"] == "2" and "Washington Spirit" not in [r["name"] for r in rows])
+    pg.click('.rowmain[data-toggle="Trinity Squared"]')
+    check("dashboard: a custom team opens to its claimed players", sorted(p["name"] for p in dash_players(pg, "Trinity Squared")) == ["Temwa Chawinga", "Trinity Rodman"])
+    check("dashboard: Customize shows its dot", pg.is_visible("#custbtn .cdot"))
+    pg.click("#custbtn")
+    check("dashboard: the Customize drawer opens", pg.is_visible("#ctdrawer"))
+    pg.uncheck("#cton")
+    pg.keyboard.press("Escape")
+    check("dashboard: turning custom teams off in its drawer updates the list", "Washington Spirit" in [r["name"] for r in dash_rows(pg)] and pg.is_hidden("#custbtn .cdot"))
+    check("dashboard: the change is saved for the checklist too", stored_teams(pg)["on"] is False)
+    pg.close()
+
+    pg = dash_page(browser, w=390)
+    pg.click('.rowmain[data-toggle="Gotham FC"]')
+    check("dashboard: team cards and player rows fit on a phone",
+          pg.evaluate("() => [...document.querySelectorAll('.group, .prow')].every((g) => g.getBoundingClientRect().right <= innerWidth)"))
+    pg.screenshot(path=str(TMP / "dashboard_390.png"), full_page=True)
+    pg.close()
+
+
 def pulls(pg):
     return pg.evaluate("() => JSON.parse(JSON.stringify(window.DEMO_DATA.Pulls))")
 
@@ -698,6 +830,7 @@ def main():
             ("team shading and multi-team cards", test_teams, ()),
             ("custom teams", test_custom_teams, ()),
             ("team and player stats", test_stats, ()),
+            ("dashboard", test_dashboard, ()),
             ("set switcher", test_set_switcher, ())] + [
             (f"sticky toolbar and back to top at {w}px", test_sticky_and_back_to_top, (w,)) for w in (760, 390)] + [
             ("inside a Grist frame", test_in_grist_frame, ())]

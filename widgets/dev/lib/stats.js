@@ -63,10 +63,16 @@
   }
 
   const METRICS = { autos: (t) => t.autos, hits: (t) => t.hits, live: (t) => t.ones.live, cards: (t) => t.cards };
-  function rankOf(map, metric, name) {
+  // Teams (or players) in rank order for a metric: by share (half credit for shared cards), then numbered copies, then name.
+  function ranked(map, metric) {
     const get = METRICS[metric];
-    const list = [...map.values()].sort((a, b) => (get(b.fair) - get(a.fair)) || (b.full.num.all - a.full.num.all) || a.name.localeCompare(b.name));
-    return list.findIndex((x) => x.name === name) + 1;
+    return [...map.values()].sort((a, b) => (get(b.fair) - get(a.fair)) || (b.full.num.all - a.full.num.all) || a.name.localeCompare(b.name));
+  }
+  const rankOf = (map, metric, name) => ranked(map, metric).findIndex((x) => x.name === name) + 1;
+  // One row of a ranked list: the count, its share of the set, and the even share (1 of the teams or players).
+  function rankRows(M, kind, metric) {
+    const map = kind === 'team' ? M.team : M.player, get = METRICS[metric], tot = get(M.total), even = map.size ? 1 / map.size : 0;
+    return ranked(map, metric).map((x, i) => ({ name: x.name, rank: i + 1, value: get(x.full), share: share(get(x.fair), tot), even, full: x.full }));
   }
 
   // The panel: one row per top-line number. Left: the number and its rank. Right: its share of the set as a bar whose
@@ -106,7 +112,7 @@
   }
 
   // Styles, added once. The variables fall back to the checklist's palette.
-  const CSS = `
+  const STYLES = `
   .ss-panel { background: var(--surface, #fff); }
   .ss-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 10px 16px 8px; }
   .ss-head h4 { margin: 0; font-family: var(--cond, sans-serif); font-weight: 700; font-size: 17px; }
@@ -134,8 +140,8 @@
   }`;
   function injectStyles() {
     if (document.getElementById('ss-styles')) return;
-    const s = document.createElement('style'); s.id = 'ss-styles'; s.textContent = CSS; document.head.appendChild(s);
+    const s = document.createElement('style'); s.id = 'ss-styles'; s.textContent = STYLES; document.head.appendChild(s);
   }
 
-  window.SetStats = { model, panel, injectStyles, tally, rankOf };
+  window.SetStats = { model, panel, injectStyles, tally, rankOf, rankRows };
 })();
