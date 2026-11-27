@@ -140,7 +140,8 @@
   const int = (n) => Math.round(n).toLocaleString('en-US');
   const pct1 = (x) => x === 0 ? '0%' : x < 0.001 ? '<0.1%' : (x * 100).toFixed(1) + '%';
   const STATS_ICON = '<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 13.5h11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M4.5 11V8M8 11V4.5M11.5 11V6.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>';
-  const METRICS = [['autos', 'Autos'], ['hits', 'Case hits'], ['live', '1/1s live'], ['cards', 'Cards']];
+  // Rank by options, in order; the first is the default.
+  const METRICS = [['cards', 'Cards'], ['autos', 'Autos'], ['hits', 'Case hits'], ['live', '1/1s live']];
 
   // ---------- data ----------
   // The same doc tables the checklist reads. Teams is optional (no shading without it).
@@ -151,7 +152,7 @@
   const rows = (cols) => cols.id.map((id, i) => { const o = { id }; for (const k in cols) o[k] = cols[k][i]; return o; });
   const D = {};
   // open: teams opened by the visitor; pins: players pinned from the search; flip: { team, player } shown on a card's back.
-  const S = { metric: 'autos', q: '', open: new Set(), pins: new Set(), flip: null, sug: [], sugIdx: -1 };
+  const S = { metric: METRICS[0][0], q: '', open: new Set(), pins: new Set(), flip: null, sug: [], sugIdx: -1 };
 
   async function loadAll() {
     const [sub, prod, cards, pars, exc, pulls, plyr] = await Promise.all(
