@@ -31,9 +31,12 @@
         },
         {
           "order": 40,
-          "name": "Coming Soon...",
-          "sub": "2026 Parkside - CONCACAF",
-          "featured": true
+          "name": "CONCACAF Collection",
+          "sub": "2026 Parkside · CONCACAF",
+          "doc": "aM1DBKgpoTGwcRBd67ik73",
+          "url": "https://docs.getgrist.com/aM1DBKgpoTGw/2026-Parkside-CONCACAF-Collection/p/10?style=singlePage",
+          "featured": true,
+          "breakdown": "https://docs.getgrist.com/aM1DBKgpoTGw/2026-Parkside-CONCACAF-Collection/p/12?style=singlePage"
         }
       ]
     }
