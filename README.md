@@ -11,7 +11,9 @@ The site is published by the **Publish site** GitHub Actions workflow on every p
 | `widgets/latest/` | Live set docs (default) | Not in the repo. Generated at publish time from the version named in `widgets/LATEST`. |
 | `widgets/v1/`, `v2/`, … | Any doc that needs a fixed version | Frozen once released. Never edit a released folder. |
 
-A widget folder can hold more than `index.html`: from v7 it also has `dashboard.html` (the team and player dashboard, added to a doc as its own custom widget at `…/widgets/<folder>/dashboard.html`) and `lib/`, the shared components both pages load by relative path: `lib/stats.js` (team and player stats) and `lib/teams.js` (My teams and the Customize drawer). Releases copy the whole folder, so each version keeps the components it was tested with.
+A widget folder can hold more than `index.html`: from v7 it also has `breakdown.html` (the team and player Breakdown, added to a doc as its own custom widget on a page named **Breakdown**, at `…/widgets/<folder>/breakdown.html`) and `lib/`, the shared components both pages load by relative path: `lib/stats.js` (team and player stats), `lib/teams.js` (My teams and the Customize drawer) and `lib/nav.js` (the header's view and set menus, and the popup menus). The view menu links the doc's pages named **Checklist** and **Breakdown**.
+
+Each set in `sets.json` has `url` (its Checklist page) and may have `breakdown` (its Breakdown page); from a Breakdown, the set menu opens a set's `breakdown` when it has one, else its `url`. Releases copy the whole folder, so each version keeps the components it was tested with.
 
 Widget URL pattern: `https://inniscor.github.io/inni_checklists/widgets/<folder>/`
 

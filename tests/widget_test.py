@@ -37,14 +37,18 @@ def check(name, cond):
     print(("PASS " if cond else "FAIL ") + name)
 
 
+# The doc's pages, as the widget reads them from Grist (to link Checklist and Breakdown).
+PAGES = [{"id": 10, "name": "Checklist"}, {"id": 12, "name": "Breakdown"}]
+
+
 def demo_page(browser, tab="checklist", by="subset", w=760, h=900, demo=None, sets=SETS,
-              doc="pCMKPajFwTiuzyVLySNiMT", name="2026 Panini Prizm Black NWSL", custom=None):
+              doc="pCMKPajFwTiuzyVLySNiMT", name="2026 Panini Prizm Black NWSL", custom=None, pages=PAGES):
     """The widget in demo mode: data, set list and doc identity come from window globals instead of Grist."""
     js = ("localStorage.clear();"
           f"localStorage.setItem('cl:tab',{json.dumps(json.dumps(tab))});"
           f"localStorage.setItem('cl:groupBy',{json.dumps(json.dumps({'checklist': by, 'ones': by}))});"
           f"window.DEMO_DATA={json.dumps(demo or DEMO)};window.DEMO_SETS={json.dumps(sets)};"
-          f"window.DEMO_DOC_ID={json.dumps(doc)};window.DEMO_DOC_NAME={json.dumps(name)};")
+          f"window.DEMO_DOC_ID={json.dumps(doc)};window.DEMO_DOC_NAME={json.dumps(name)};window.DEMO_PAGES={json.dumps(pages)};")
     if custom is not None:
         js += f"localStorage.setItem('cl:customTeams',{json.dumps(json.dumps(custom))});"
     f = TMP / f"demo_{tab}_{w}.html"
@@ -58,14 +62,14 @@ def demo_page(browser, tab="checklist", by="subset", w=760, h=900, demo=None, se
     return pg
 
 
-DASH = WIDGET.parent / "dashboard.html"
+DASH = WIDGET.parent / "breakdown.html"
 
 
-def dash_page(browser, w=760, h=900, demo=None, custom=None, doc="pCMKPajFwTiuzyVLySNiMT"):
-    """The dashboard (dashboard.html beside the widget) in demo mode, like demo_page."""
+def dash_page(browser, w=760, h=900, demo=None, custom=None, doc="pCMKPajFwTiuzyVLySNiMT", sets=SETS, pages=PAGES):
+    """The Breakdown (breakdown.html beside the widget) in demo mode, like demo_page."""
     js = ("localStorage.clear();"
-          f"window.DEMO_DATA={json.dumps(demo or DEMO)};window.DEMO_SETS={json.dumps(SETS)};"
-          f"window.DEMO_DOC_ID={json.dumps(doc)};window.DEMO_DOC_NAME='Checklist Sandbox';")
+          f"window.DEMO_DATA={json.dumps(demo or DEMO)};window.DEMO_SETS={json.dumps(sets)};"
+          f"window.DEMO_DOC_ID={json.dumps(doc)};window.DEMO_DOC_NAME='Checklist Sandbox';window.DEMO_PAGES={json.dumps(pages)};")
     if custom is not None:
         js += f"localStorage.setItem('cl:customTeams',{json.dumps(json.dumps(custom))});"
     f = TMP / f"dash_{w}.html"
@@ -106,7 +110,8 @@ def test_dashboard(browser):
     if not DASH.exists():
         return
     pg = dash_page(browser)
-    check("dashboard: title from sets.json", pg.inner_text("#settitle") == "Prizm Black")
+    check("breakdown: set name from sets.json, view button reads Breakdown",
+          pg.inner_text("#setbtn").strip() == "Prizm Black" and pg.inner_text("#viewbtn").strip() == "Breakdown")
     check("dashboard: Default tab selected, Break shown but disabled",
           pg.get_attribute("#tab-default", "aria-selected") == "true" and pg.is_disabled("#tab-break"))
     pg.click("#tab-break", force=True)
@@ -750,6 +755,61 @@ def test_set_switcher(browser):
     pg.close()
 
 
+def test_navigation(browser):
+    """The header: a view button (Checklist / Breakdown) and the set menu; switching sets keeps the view."""
+    pg = demo_page(browser)
+    check("checklist: view button reads Checklist, set name beside it",
+          pg.inner_text("#viewbtn").strip() == "Checklist" and pg.inner_text("#setbtn").strip() == "Prizm Black"
+          and pg.evaluate("() => { const v = document.querySelector('#viewbtn').getBoundingClientRect(), s = document.querySelector('#setbtn').getBoundingClientRect(); return s.left > v.right && Math.abs((s.top + s.bottom) / 2 - (v.top + v.bottom) / 2) < 12; }"))
+    pg.click("#viewbtn")
+    items = pg.eval_on_selector_all(".menu.viewmenu .mi", "els => els.map(a => [a.textContent.trim(), a.getAttribute('href'), a.getAttribute('aria-current'), a.target])")
+    check("view menu lists Checklist (current) and Breakdown", [i[0] for i in items] == ["Checklist", "Breakdown"] and items[0][2] == "page")
+    check("Breakdown links to this doc's Breakdown page, same tab, panels hidden",
+          items[1][1] == "https://docs.getgrist.com/pCMKPajFwTiuzyVLySNiMT/p/12?style=singlePage" and items[1][3] == "_top")
+    check("the current view is focused when the menu opens", pg.evaluate("() => document.activeElement.dataset.view") == "checklist")
+    pg.keyboard.press("Escape")
+    check("Escape closes the view menu and returns focus", not pg.query_selector(".menu") and pg.evaluate("() => document.activeElement.id") == "viewbtn")
+    pg.close()
+
+    pg = demo_page(browser, doc="9Abbfx43q1qkGw3t1Qm9BL", name="Checklist Sandbox")
+    pg.click("#viewbtn")
+    check("an unlisted doc (the sandbox) links its pages by name too",
+          pg.get_attribute('.menu.viewmenu [data-view="breakdown"]', "href") == "https://docs.getgrist.com/9Abbfx43q1qkGw3t1Qm9BL/p/12?style=singlePage")
+    pg.close()
+
+    pg = demo_page(browser, doc="9Abbfx43q1qkGw3t1Qm9BL", name="Checklist Sandbox", pages=[{"id": 10, "name": "Checklist"}])
+    check("a doc without a Breakdown page: the view button can't open", pg.is_disabled("#viewbtn"))
+    pg.close()
+
+    pg = demo_page(browser, w=390, h=760)
+    check("[phone] view button and set name share a line", pg.evaluate("() => Math.abs(document.querySelector('#viewbtn').getBoundingClientRect().top - document.querySelector('#setbtn').getBoundingClientRect().top) < 12"))
+    pg.click("#viewbtn")
+    check("[phone] the view menu opens as a bottom sheet", pg.query_selector(".sheet.viewmenu") is not None)
+    pg.close()
+
+    # From the Breakdown, a set with a Breakdown page opens there; one without opens on its Checklist.
+    sets = json.loads(json.dumps(SETS))
+    crown = next(x for y in sets["years"] for x in y["sets"] if x["name"] == "Crown Royale")
+    crown["breakdown"] = crown["url"].replace("/p/10", "/p/12")
+    pg = dash_page(browser, sets=sets)
+    pg.click("#viewbtn")
+    check("breakdown: view menu marks Breakdown and links back to Checklist",
+          pg.get_attribute('.menu.viewmenu [data-view="breakdown"]', "aria-current") == "page"
+          and pg.get_attribute('.menu.viewmenu [data-view="checklist"]', "href") == "https://docs.getgrist.com/pCMKPajFwTiuzyVLySNiMT/p/10?style=singlePage")
+    pg.keyboard.press("Escape")
+    pg.click("#setbtn")
+    hrefs = dict(pg.eval_on_selector_all(".menu.setmenu a.mi", "els => els.map(a => [a.querySelector('b').textContent, a.getAttribute('href')])"))
+    check("switching sets from the Breakdown keeps the view where the set has one", hrefs.get("Crown Royale") == crown["breakdown"])
+    check("…and opens the set's Checklist where it doesn't", hrefs.get("Prizm Black", "").endswith("/p/10?style=singlePage"))
+    pg.close()
+
+    pg = demo_page(browser, sets=sets)
+    pg.click("#setbtn")
+    hrefs = dict(pg.eval_on_selector_all(".menu.setmenu a.mi", "els => els.map(a => [a.querySelector('b').textContent, a.getAttribute('href')])"))
+    check("from the Checklist, sets open on their Checklist", hrefs.get("Crown Royale") == crown["url"])
+    pg.close()
+
+
 def test_in_grist_frame(browser):
     """Inside an iframe with a stand-in Grist API: the doc's title must come from the REST API, never the doc ID."""
     site = TMP / "site"
@@ -763,7 +823,10 @@ def test_in_grist_frame(browser):
         stub = f"""<script>
         const DATA = {json.dumps(DEMO)}, DOC = {json.dumps(doc)}, API_OK = {json.dumps(api_ok)};
         window.grist = {{ ready() {{}}, onRecords() {{}}, docApi: {{
-          fetchTable: async (t) => {{ if (!DATA[t]) throw new Error('no table ' + t); return DATA[t]; }},
+          fetchTable: async (t) => {{
+            if (t === '_grist_Views') return {{ id: [10, 12, 3], name: ['Checklist', 'Breakdown', 'Cards'] }};
+            if (t === '_grist_Pages') return {{ id: [1, 2, 3], viewRef: [10, 12, 3] }};
+            if (!DATA[t]) throw new Error('no table ' + t); return DATA[t]; }},
           getAccessToken: async () => ({{ token: 'tok', baseUrl: 'https://docs.example.com/api/docs/' + DOC }}),
           getDocName: async () => DOC, applyUserActions: async () => {{}} }} }};
         const realFetch = window.fetch;
@@ -779,11 +842,14 @@ def test_in_grist_frame(browser):
         pg.goto((site / "host.html").as_uri())
         pg.wait_for_timeout(700)
         frame = pg.frames[1]
-        head = frame.query_selector("#sethead:not([hidden])")
-        title = head.inner_text().split("\n")[0].strip() if head else None
+        head = frame.query_selector("#sethead:not([hidden]) .setbtn")
+        title = head.inner_text().strip() if head else None
         check(f"in Grist (API {'ok' if api_ok else 'refused'}, doc {doc[:6]}…): title {title!r}", title == want)
         if api_ok:
             check("in Grist: the shared stats file loads from beside the widget", frame.evaluate("() => !!window.SetStats"))
+            frame.click("#viewbtn")
+            check("in Grist: Breakdown links to the doc's page named Breakdown, on the doc's own host",
+                  frame.get_attribute('.menu.viewmenu [data-view="breakdown"]', "href") == f"https://docs.example.com/{doc}/p/12?style=singlePage")
         pg.close()
 
 
@@ -841,6 +907,7 @@ def main():
             ("custom teams", test_custom_teams, ()),
             ("team and player stats", test_stats, ()),
             ("dashboard", test_dashboard, ()),
+            ("navigation", test_navigation, ()),
             ("set switcher", test_set_switcher, ())] + [
             (f"sticky toolbar and back to top at {w}px", test_sticky_and_back_to_top, (w,)) for w in (760, 390)] + [
             ("inside a Grist frame", test_in_grist_frame, ())]

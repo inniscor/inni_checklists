@@ -5,16 +5,18 @@ All changes to the checklist widget, newest first. **Unreleased** describes what
 ## Unreleased
 
 ### Added
-- **Dashboard** (`dashboard.html`, beside the checklist): the set's teams, ranked. Tabs **Default** and **Break** (Break is shown but not available yet). A search box and a **Rank by** pill (Autos, Case hits, 1/1s live, Cards); no filters. Each team card is tinted with its color and shows its rank, its name, the other three numbers, and the ranked number with its share of the set (bar with an even-share tick in the middle).
+- **Breakdown** (`breakdown.html`, beside the checklist; called Dashboard while it was built): the set's teams, ranked. Tabs **Default** and **Break** (Break is shown but not available yet). A search box and a **Rank by** pill (Autos, Case hits, 1/1s live, Cards); no filters. Each team card is tinted with its color and shows its rank, its name, the other three numbers, and the ranked number with its share of the set (bar with an even-share tick in the middle).
 - Clicking a team opens its players, ranked the same way, each showing her rank across the whole set and her own share bar. Players sit under their team (or their custom team).
 - **Rank by** starts with **Cards**, the default; then Autos, Case hits, 1/1s live. Each team's and player's subline lists the other numbers in that order, so cards comes first whenever it isn't the ranked number.
 - Chart buttons on teams and players flip the whole team card to the stats card (the same one as the checklist): the team's stats, or that player's, with her name on top. The rest of the list dims until it flips back (chart button, **Back to the list**, Escape or a click on the dimmed list). Read-only.
 - Search: typing a team's name shows that team; typing a player's name shows her team, open, with only the matching players. Matching players are offered in a dropdown to pin as chips: pinned players show only their teams, open, with only them, so several players can be compared. **Clear all** removes the chips.
-- The dashboard has the same **Customize** button and drawer as the checklist, so My teams can be edited from either page; both read the same saved teams, so a change in one shows in the other.
+- The Breakdown has the same **Customize** button and drawer as the checklist, so My teams can be edited from either page; both read the same saved teams, so a change in one shows in the other.
+- **Navigation** on both pages: a view button (**Checklist ▾** / **Breakdown ▾**) switches between the doc's two pages, and the set's name beside it opens the set menu (Featured and years, as before). Switching sets keeps the view: from the Breakdown, a set opens on its Breakdown when sets.json lists one (`breakdown`), else on its Checklist. The view menu finds this doc's pages by name ("Checklist" and "Breakdown"), so it works in docs that aren't in sets.json too.
 
 ### Changed
 - Fewer explanatory lines: the stats card drops its legend ("tick = an even share…") and its footer note ("Whole set, every product. Cards shared… count half in shares."); the footer now says "<Product> only" when one product is chosen in Filters, and is otherwise just the back button. The 1/1s count reads "4 of 11 live" (was "still out there"). The My teams section drops its explanation line.
-- My teams (custom teams and the Customize drawer) moved into a shared file, `lib/teams.js`, used by the checklist and the dashboard. No change in how it works.
+- My teams (custom teams and the Customize drawer) moved into a shared file, `lib/teams.js`, used by the checklist and the Breakdown. No change in how it works.
+- The popup menus and the set switcher moved into a shared file, `lib/nav.js`, with the new view menu. The 1/1 status menu uses the same popup.
 
 ### Added
 - **Stats** (Checklist tab): a chart button at the right end of every team and player group header (grouped by Team or Player) flips that group's card over to show its stats where its cards were, opening the group if it was closed. Four rows, one per top-line number: **Autos**, **Case hits**, **1/1s live** and **Cards**. Each shows the number and its rank on the left, and its share of the set on the right: a percentage, a bar whose middle tick is an even share (1 of the teams or players; full at twice that), how many times an even share it is, and the count behind it. A number the set doesn't have (e.g. no case hits) says so, with no bar or rank.
@@ -35,7 +37,7 @@ All changes to the checklist widget, newest first. **Unreleased** describes what
 - The custom team's tint uses the same calculation as the Teams table's `Tint` formula (checked against the 16 NWSL club tints).
 
 ### Requires
-- Nothing. No document changes.
+- Each doc that gets the Breakdown needs a page named **Breakdown** with the widget at `…/widgets/<version>/breakdown.html` (full access); its Checklist page must be named **Checklist**. To keep the view when switching sets, add each set's Breakdown page link to sets.json as `breakdown`.
 
 ## v6 — 2026-11-25
 
