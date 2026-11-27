@@ -230,7 +230,6 @@
     panel.classList.toggle('alloff', !CT.on);
     panel.innerHTML = `<div class="cthead"><span class="ctsec"><label class="switch"><input type="checkbox" id="cton" ${CT.on ? 'checked' : ''} aria-labelledby="ctsech"></label><h3 id="ctsech">My teams</h3></span>
         <button class="ctlink" id="ctsharebtn" aria-expanded="${ui.share}">Share/import</button></div>
-      <p class="cthint">Claim players for a team of your own. Their cards move to your team in every view and download.</p>
       ${ui.share ? `<div class="ctshare"><label class="ctlabel" for="ctcode">Your teams as a code</label><textarea id="ctcode" readonly>${esc(CT.teams.length ? exportCode() : '')}</textarea>
         <span><button class="ctbtn" id="ctcopy" ${CT.teams.length ? '' : 'disabled'}>Copy code</button></span>
         <label class="ctlabel" for="ctimport">Paste a code to add its teams</label><textarea id="ctimport" placeholder="CT1:…"></textarea>
@@ -307,7 +306,6 @@
   .ctmetarow { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-top: 8px; }
   .ctmetarow .ctmeta { margin: 0; }
   .ctnew { border: 1px dashed #A9B4BF; }
-  .cthint { color: var(--muted); font-size: 13px; margin: 6px 0 2px; }
   .switch { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; cursor: pointer; }
   .switch input { appearance: none; width: 34px; height: 20px; border-radius: 999px; background: var(--line); position: relative; margin: 0; cursor: pointer; transition: background .15s; }
   .switch input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform .15s; box-shadow: 0 1px 2px rgba(20,33,46,.3); }

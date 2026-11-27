@@ -81,7 +81,7 @@
   const ROWS = [
     { key: 'autos', label: 'Autos', get: (t) => t.autos, of: "of the set's autos", unit: 'auto cards', none: 'No autos in this set' },
     { key: 'hits', label: 'Case hits', get: (t) => t.hits, of: "of the set's case hits", unit: 'SSP cards', none: 'No case hits in this set' },
-    { key: 'live', label: '<span class="ss-nocase">1/1s</span> live', get: (t) => t.ones.live, of: 'of the live 1/1s', unit: 'still out there', none: 'No live 1/1s in this set' },
+    { key: 'live', label: '<span class="ss-nocase">1/1s</span> live', get: (t) => t.ones.live, of: 'of the live 1/1s', unit: 'live', none: 'No live 1/1s in this set' },
     { key: 'cards', label: 'Cards', get: (t) => t.cards, of: 'of the checklist', unit: 'cards', none: 'No cards' },
   ];
   const pct1 = (x) => x === 0 ? '0%' : x < 0.001 ? '<0.1%' : (x * 100).toFixed(1) + '%';
@@ -106,9 +106,10 @@
         `<small class="ss-count">${int(v)} of ${int(tot)} ${r.unit}</small>`;
       return `<div class="ss-row" data-metric="${r.key}"><div class="ss-left"><span class="ss-lab">${r.label}</span>${left}</div><div class="ss-right">${right}</div></div>`;
     }).join('');
-    const scope = M.product == null ? 'Whole set, every product.' : `${esc((M.I.products.find((p) => p.id === M.product) || {}).Product || 'One product')} only.`;
-    return `<div class="ss-panel"><div class="ss-head"><h4>Share of the set</h4><small>tick = an even share (1 of ${n} ${who})</small></div>${rows}
-      <div class="ss-foot"><span class="ss-note">${scope} Cards shared with another ${kind} count half in shares.</span>${opts.footer || ''}</div></div>`;
+    // Only a product filter changes what the numbers mean, so only then does the footer say so.
+    const scope = M.product == null ? '' : `${esc((M.I.products.find((p) => p.id === M.product) || {}).Product || 'One product')} only`;
+    return `<div class="ss-panel"><div class="ss-head"><h4>Share of the set</h4></div>${rows}
+      <div class="ss-foot"><span class="ss-note">${scope}</span>${opts.footer || ''}</div></div>`;
   }
 
   // Styles, added once. The variables fall back to the checklist's palette.
@@ -131,12 +132,13 @@
   .ss-even { position: absolute; left: 50%; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: var(--ink, #14212E); border-radius: 1px; box-shadow: 0 0 0 1px var(--surface, #fff); }
   .ss-foot { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 12px 16px 14px; border-top: 1px solid var(--line, #D3DAE1); }
   .ss-note { color: var(--muted, #5E6B78); font-size: 12.5px; }
-  .ss-foot > :not(.ss-note) { flex: none; }
+  .ss-note:empty { display: none; }
+  .ss-foot > :not(.ss-note) { flex: none; margin-left: auto; }
   @media (max-width: 600px) {
     .ss-head { display: block; padding: 10px 12px 8px; } .ss-head small { display: block; text-align: left; }
     .ss-row { grid-template-columns: 96px minmax(0, 1fr); gap: 14px; padding: 12px; }
     .ss-big { font-size: 30px; } .ss-lab { font-size: 13px; }
-    .ss-foot { flex-direction: column; text-align: center; gap: 10px; padding: 10px 12px 14px; }
+    .ss-foot { flex-direction: column; text-align: center; gap: 10px; padding: 10px 12px 14px; } .ss-foot > :not(.ss-note) { margin: 0 auto; }
   }`;
   function injectStyles() {
     if (document.getElementById('ss-styles')) return;

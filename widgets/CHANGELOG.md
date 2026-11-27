@@ -12,6 +12,7 @@ All changes to the checklist widget, newest first. **Unreleased** describes what
 - The dashboard has the same **Customize** button and drawer as the checklist, so My teams can be edited from either page; both read the same saved teams, so a change in one shows in the other.
 
 ### Changed
+- Fewer explanatory lines: the stats card drops its legend ("tick = an even share…") and its footer note ("Whole set, every product. Cards shared… count half in shares."); the footer now says "<Product> only" when one product is chosen in Filters, and is otherwise just the back button. The 1/1s count reads "4 of 11 live" (was "still out there"). The My teams section drops its explanation line.
 - My teams (custom teams and the Customize drawer) moved into a shared file, `lib/teams.js`, used by the checklist and the dashboard. No change in how it works.
 
 ### Added
