@@ -81,7 +81,7 @@ A schema change (a table, column, formula, page or access rule) moves through th
 
 ## Tests
 
-`tests/widget_test.py` loads a widget folder in a headless browser with sample data (`tests/fixtures/demo.json`) and checks layout, team shading and multi-team cards, the 1/1 status menu and the Pulls changes it makes, the Status filter and the set switcher, at desktop and phone widths. It also runs the widget inside a frame with a stand-in Grist API.
+`tests/widget_test.py` loads a widget folder in a headless browser with sample data (`tests/fixtures/demo.json`) and checks layout, team shading and multi-team cards, the 1/1 status menu and the Pulls changes it makes, the Status filter, custom teams (My teams) and the set switcher, at desktop and phone widths. It also runs the widget inside a frame with a stand-in Grist API.
 
 ```
 pip install playwright

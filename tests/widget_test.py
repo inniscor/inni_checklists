@@ -12,6 +12,7 @@ Set CHROME_PATH to use an installed Chrome instead of Playwright's Chromium.
 Exits non-zero if any check fails or the page throws an error.
 """
 import copy
+import csv
 import json
 import os
 import sys
@@ -36,13 +37,15 @@ def check(name, cond):
 
 
 def demo_page(browser, tab="checklist", by="subset", w=760, h=900, demo=None, sets=SETS,
-              doc="pCMKPajFwTiuzyVLySNiMT", name="2026 Panini Prizm Black NWSL"):
+              doc="pCMKPajFwTiuzyVLySNiMT", name="2026 Panini Prizm Black NWSL", custom=None):
     """The widget in demo mode: data, set list and doc identity come from window globals instead of Grist."""
     js = ("localStorage.clear();"
           f"localStorage.setItem('cl:tab',{json.dumps(json.dumps(tab))});"
           f"localStorage.setItem('cl:groupBy',{json.dumps(json.dumps({'checklist': by, 'ones': by}))});"
           f"window.DEMO_DATA={json.dumps(demo or DEMO)};window.DEMO_SETS={json.dumps(sets)};"
           f"window.DEMO_DOC_ID={json.dumps(doc)};window.DEMO_DOC_NAME={json.dumps(name)};")
+    if custom is not None:
+        js += f"localStorage.setItem('cl:customTeams',{json.dumps(json.dumps(custom))});"
     f = TMP / f"demo_{tab}_{w}.html"
     f.write_text(WIDGET.read_text().replace(PLUGIN_TAG, f"<script>{js}</script>"))
     pg = browser.new_page(viewport={"width": w, "height": h}, device_scale_factor=2)
@@ -206,6 +209,133 @@ def test_teams(browser):
     cards_in_group(pg, a)
     check("no Teams table: no tiles or headers are tinted",
           not any(h.get_attribute("style") for h in pg.query_selector_all("#list .ghead")) and "--blk" not in row_style(pg, multi))
+    pg.close()
+
+
+# The 16 NWSL club colors and the tints the sandbox's Teams.Tint formula gives them (Nov 2026).
+DOC_TINTS = {"#F1B1A5": "#F7D5CE", "#0D2032": "#D2E3F3", "#36E882": "#CEF8E0", "#3AB5E8": "#CEECF8", "#20604E": "#D5F1E9",
+             "#000000": "#E0E0E0", "#FF6900": "#F8DFCE", "#62CBC9": "#D5F1F1", "#AB0033": "#F8CEDA", "#61259E": "#E3D2F4",
+             "#99242B": "#F4D2D4", "#14002F": "#E0CEF8", "#FC1896": "#F8CEE5", "#2E407A": "#D6DCF0", "#FDB71A": "#F8EBCE",
+             "#F3FB00": "#F7F8CE"}
+
+
+def stored_teams(pg):
+    return pg.evaluate("() => JSON.parse(localStorage.getItem('cl:customTeams') || 'null')")
+
+
+def csv_rows(pg):
+    with pg.expect_download() as dl:
+        pg.click("#download")
+    with open(dl.value.path(), encoding="utf-8-sig", newline="") as f:
+        return list(csv.DictReader(f))
+
+
+def test_custom_teams(browser):
+    pg = demo_page(browser, "checklist", by="team")
+    got = pg.evaluate(f"() => Object.fromEntries(Object.keys({json.dumps(DOC_TINTS)}).map((c) => [c, window.__tintOf(c)]))")
+    check("custom team tint matches the doc's Tint formula for all 16 club colors", got == DOC_TINTS)
+    check("no custom teams: My teams marker is off", pg.is_hidden("#ctnote") and "on" not in (pg.get_attribute("#ctbtn", "class") or ""))
+    pg.close()
+
+    # Override: Rodman (Washington's only player) and Chawinga (on two shared cards) move to Trinity Squared.
+    team = {"on": True, "teams": [{"id": "t1", "name": "Trinity Squared", "color": "#7048E8", "players": ["Trinity Rodman", "temwa chawinga"]}]}
+    tint = pg_tint = None
+    pg = demo_page(browser, "checklist", by="team", custom=team)
+    tint = pg.evaluate("() => window.__tintOf('#7048E8')")
+    names = group_names(pg)
+    check("custom team is listed first when grouped by team", names[0] == "Trinity Squared")
+    check("Washington Spirit disappears once its only player is claimed", "Washington Spirit" not in names)
+    mine = cards_in_group(pg, "Trinity Squared")
+    check("custom team holds the claimed players' cards (name match ignores case)", set(mine) == {3, 10, 4, 11, 9, 13})
+    kc = cards_in_group(pg, "Kansas City Current")
+    check("claimed cards leave the real team; the shared card with an unclaimed teammate stays", 9 in kc and 4 not in kc and 11 not in kc)
+    check("shared card with one claimed player shows under the other player's team too", 13 in cards_in_group(pg, "Gotham FC"))
+    check("a claimed card's tile uses the custom team's tint", f"--blk:linear-gradient({tint}, {tint})" in row_style(pg, 3))
+    st = row_style(pg, 9)
+    check("shared card blends the custom tint with the teammate's team", "90deg" in st and tint in st and "#D5F1F1" in st)
+    heads = {h.inner_text().split("\n")[0].strip(): h.get_attribute("style") or "" for h in pg.query_selector_all("#list .ghead")}
+    check("custom team header is tinted", tint in heads["Trinity Squared"])
+    check("marker shows while custom teams are in effect", pg.is_visible("#ctnote") and "on" in pg.get_attribute("#ctbtn", "class"))
+    rows = {r["Card Number"] + r["Subset"]: r for r in csv_rows(pg)}
+    check("CSV: a claimed card's Team is the custom team", rows["55Base"]["Team"] == "Trinity Squared")
+    check("CSV: a shared card lists both teams", rows["10Connections"]["Team"] in ("Trinity Squared / Kansas City Current", "Kansas City Current / Trinity Squared"))
+    pg.click("#fbtn")
+    check("Team filter lists the custom team and not the emptied one",
+          pg.query_selector('#filters [data-f="team"][data-v="Trinity Squared"]') is not None and pg.query_selector('#filters [data-f="team"][data-v="Washington Spirit"]') is None)
+    pg.click('#filters [data-f="team"][data-v="Trinity Squared"]')
+    check("filtering on the custom team shows only its group", group_names(pg) == ["Trinity Squared"])
+    pg.click("#ctoff")
+    names = group_names(pg)
+    check("turning custom teams off restores the doc's teams", "Washington Spirit" in names and "Trinity Squared" not in names)
+    st = stored_teams(pg)
+    check("turning off keeps the team saved", st["on"] is False and st["teams"][0]["name"] == "Trinity Squared")
+    pg.close()
+
+    # Both players of a shared card claimed: the card belongs only to the custom team.
+    both = {"on": True, "teams": [{"id": "t1", "name": "Duo", "color": "#D6336C", "players": ["Esther Gonzalez", "Temwa Chawinga"]}]}
+    pg = demo_page(browser, "checklist", by="team", custom=both)
+    duo = pg.evaluate("() => window.__tintOf('#D6336C')")
+    check("card with every player claimed is only on the custom team",
+          13 in cards_in_group(pg, "Duo") and 13 not in cards_in_group(pg, "Gotham FC") and 13 not in cards_in_group(pg, "Kansas City Current"))
+    check("that card's tile uses only the custom tint", row_style(pg, 13) == f"--blk:linear-gradient({duo}, {duo});")
+    pg.close()
+
+    # 1/1s tab follows too.
+    pg = demo_page(browser, "ones", by="team", custom=team)
+    check("1/1s tab groups by the custom team", "Trinity Squared" in group_names(pg) and "Washington Spirit" not in group_names(pg))
+    pg.close()
+
+    # Building a team in the panel.
+    pg = demo_page(browser, "checklist", by="team", custom={"on": True, "teams": []})
+    pg.click("#ctbtn")
+    check("My teams opens its panel", pg.is_visible("#ctpanel"))
+    pg.click("#ctnew")
+    check("New team focuses its name", pg.evaluate("() => document.activeElement.matches('[data-ctname]')"))
+    pg.fill("[data-ctname]", "Gotham FC")
+    pg.press("[data-ctname]", "Enter")
+    check("a real team's name is refused", pg.input_value("[data-ctname]") == "My team")
+    pg.fill("[data-ctname]", "Rodmans")
+    pg.press("[data-ctname]", "Enter")
+    pg.fill("[data-ctadd]", "trinity rodman")
+    pg.press("[data-ctadd]", "Enter")
+    check("claiming a player adds her chip", pg.query_selector('[data-ctrm="Trinity Rodman"]') is not None)
+    check("the new team appears in the list", "Rodmans" in group_names(pg))
+    pg.fill("[data-ctadd]", "Nobody Here")
+    pg.press("[data-ctadd]", "Enter")
+    check("a name that isn't in the set is refused", pg.inner_text("#toast").startswith("No player named"))
+    pg.click("#ctnew")
+    second = pg.query_selector_all(".ctteam")[1]
+    second.query_selector("[data-ctadd]").fill("Trinity Rodman")
+    second.query_selector("[data-ctadd]").press("Enter")
+    st = stored_teams(pg)
+    check("claiming a player for another custom team moves her", st["teams"][0]["players"] == [] and st["teams"][1]["players"] == ["Trinity Rodman"])
+    check("the move is announced", "Moved Trinity Rodman" in pg.inner_text("#toast"))
+    pg.click("#ctsharebtn")
+    code = pg.input_value("#ctcode")
+    check("share code is offered", code.startswith("CT1:"))
+    first = pg.query_selector_all(".ctteam")[0]
+    first.query_selector("[data-ctdel]").click()
+    check("Delete asks once more", pg.query_selector_all(".ctteam")[0].query_selector(".ctdel.confirm") is not None)
+    pg.query_selector_all(".ctteam")[0].query_selector("[data-ctdel]").click()
+    check("confirmed Delete removes the team", len(stored_teams(pg)["teams"]) == 1)
+    pg.close()
+
+    pg = demo_page(browser, "checklist", by="team", custom={"on": True, "teams": []})
+    pg.click("#ctbtn")
+    pg.click("#ctsharebtn")
+    pg.fill("#ctimport", code)
+    pg.click("#ctdoimport")
+    st = stored_teams(pg)
+    check("importing a code brings its teams", [t["players"] for t in st["teams"]] == [[], ["Trinity Rodman"]] and "Washington Spirit" not in group_names(pg))
+    pg.close()
+
+    # A team from another set: players missing here are kept but dimmed.
+    away = {"on": True, "teams": [{"id": "t1", "name": "Mixed", "color": "#1C7ED6", "players": ["Trinity Rodman", "Alex Morgan"]}]}
+    pg = demo_page(browser, "checklist", by="team", custom=away, w=390)
+    pg.click("#ctbtn")
+    check("a player not in this set is kept and dimmed", "away" in pg.get_attribute('[data-ctrm="Alex Morgan"]', "class"))
+    check("the team says how many of its players are here", "1 of 2 players in this set" in pg.inner_text(".ctteam"))
+    pg.screenshot(path=str(TMP / "my_teams_390.png"), full_page=True)
     pg.close()
 
 
@@ -384,6 +514,7 @@ def main():
         groups = [(f"checklist and 1/1s at {w}px", test_checklist_and_ones, (w,)) for w in (760, 390)] + [
             ("doc without Off_Market", test_without_off_market, ()),
             ("team shading and multi-team cards", test_teams, ()),
+            ("custom teams", test_custom_teams, ()),
             ("set switcher", test_set_switcher, ())] + [
             (f"sticky toolbar and back to top at {w}px", test_sticky_and_back_to_top, (w,)) for w in (760, 390)] + [
             ("inside a Grist frame", test_in_grist_frame, ())]

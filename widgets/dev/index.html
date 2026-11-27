@@ -206,6 +206,35 @@
   .btn.ghost { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px; font-weight: 500; font-size: 14px; }
   .btn.ghost .ico { width: 15px; height: 15px; }
   .btn.ghost:hover { background: var(--surface); color: var(--ink); border-color: var(--ink); }
+
+  /* My teams: the visitor's own teams, kept in this browser. The button shows a dot while they're in effect. */
+  #ctbtn.on { border-color: var(--pitch); }
+  #ctbtn.on b::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--pitch); margin: 0 4px 1px 0; }
+  .ctpanel { padding: 10px 12px 12px; }
+  .cthead { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; }
+  .cthint { color: var(--muted); font-size: 13px; margin: 6px 0 2px; }
+  .switch { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; cursor: pointer; }
+  .switch input { appearance: none; width: 34px; height: 20px; border-radius: 999px; background: var(--line); position: relative; margin: 0; cursor: pointer; transition: background .15s; }
+  .switch input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform .15s; box-shadow: 0 1px 2px rgba(20,33,46,.3); }
+  .switch input:checked { background: var(--pitch); } .switch input:checked::after { transform: translateX(14px); }
+  .ctteam { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px 10px; margin-top: 10px; }
+  .ctrow { display: flex; align-items: center; gap: 8px; }
+  .ctrow input[type=color] { flex: none; width: 30px; height: 30px; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: none; cursor: pointer; }
+  .ctname { flex: 1; min-width: 0; padding: 5px 8px; border: 1px solid transparent; border-radius: 6px; background: transparent; font-family: var(--cond); font-weight: 700; font-size: 19px; }
+  .ctname:hover, .ctname:focus { border-color: var(--line); background: var(--surface); }
+  .ctdel { color: #B42318; } .ctdel.confirm { font-weight: 600; }
+  .ctplayers { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .ctp { background: var(--blk, var(--bg)); color: var(--ink); }
+  .ctp span { background: none; }
+  .ctp.away { opacity: .55; }
+  .ctadd { display: flex; gap: 6px; margin-top: 8px; }
+  .ctadd input { flex: 1; min-width: 0; padding: 6px 9px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); font-size: 15px; }
+  .ctmeta { display: block; color: var(--muted); font-size: 12.5px; margin-top: 6px; }
+  .ctfoot { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+  .ctshare { margin-top: 10px; display: grid; gap: 6px; }
+  .ctshare textarea { width: 100%; min-height: 56px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; font: 12.5px/1.4 ui-monospace, monospace; resize: vertical; }
+  .ctshare .row { margin-top: 0; }
+  .ctnote { font-size: 13px; color: var(--pitch); font-weight: 600; }
 </style>
 </head>
 <body>
@@ -225,12 +254,15 @@
   </div>
   <div class="row" id="activebar">
     <button class="fbtn" id="fbtn" aria-expanded="false" aria-controls="filters"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4.5h7m3 0h1M2.5 11.5h2m3 0h6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="11" cy="4.5" r="1.6" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="6" cy="11.5" r="1.6" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Filters<b id="fcount"></b><span class="chev" aria-hidden="true"><svg class="ico" viewBox="0 0 12 12"><path d="M4.5 2.5 8 6l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
+    <button class="fbtn" id="ctbtn" aria-expanded="false" aria-controls="ctpanel"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><circle cx="6" cy="5.2" r="2.3" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M1.8 13.2c.5-2.4 2.2-3.7 4.2-3.7s3.7 1.3 4.2 3.7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M12.2 4.6v4.2M10.1 6.7h4.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>My teams<b id="ctcount"></b><span class="chev" aria-hidden="true"><svg class="ico" viewBox="0 0 12 12"><path d="M4.5 2.5 8 6l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
     <span class="row" id="chips" style="margin:0"></span><button class="link" id="clear" hidden>Clear all</button>
   </div>
   <div class="fpanel" id="filters" hidden></div>
+  <div class="fpanel ctpanel" id="ctpanel" hidden></div>
+  <datalist id="ctplayers"></datalist>
   </div>
   <div class="summary">
-    <span class="left"><span id="count"></span><button class="link" id="allgroups"></button></span>
+    <span class="left"><span id="count"></span><button class="link" id="allgroups"></button><span class="ctnote" id="ctnote" hidden></span></span>
     <button class="btn ghost" id="download"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.5v7.5m0 0L5 7m3 3 3-3M3 12.5h10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>CSV</button>
     <span id="viewbar"></span>
   </div>
@@ -284,6 +316,7 @@
     f: { type: new Set(), team: new Set(), subset: new Set(), product: new Set(), status: new Set() },
     players: new Set(),
     panelOpen: false,                               // filters panel
+    ctOpen: false, ctShare: false, ctConfirm: null, ctFocus: null, // My teams panel
     sug: [], sugIdx: -1,                            // player suggestions under the search box
     groupBy: store.get('groupBy', { checklist: 'team', ones: 'team' }),
     taps: { checklist: new Map(), ones: new Map() }, // groups the visitor opened/closed, per view
@@ -295,8 +328,8 @@
     const [sub, prod, cards, pars, exc, pulls, plyr] = await Promise.all(
       ['Subsets', 'Products', 'Cards', 'Parallels', 'PrintRunExceptions', 'Pulls', 'Players'].map((t) => source.fetch(t)));
     // Teams is optional: a doc without it (or a team without a Tint) just shows no team shading.
-    D.teamTint = new Map();
-    try { for (const t of rows(await source.fetch('Teams'))) if (t.Team && t.Tint) D.teamTint.set(String(t.Team).trim(), String(t.Tint).trim()); } catch (e) {}
+    D.baseTint = new Map();
+    try { for (const t of rows(await source.fetch('Teams'))) if (t.Team && t.Tint) D.baseTint.set(String(t.Team).trim(), String(t.Tint).trim()); } catch (e) {}
     // Cards.Players is a reference list to Players; names live in Players.Player_Name.
     const playerName = new Map(rows(plyr).map((p) => [p.id, String(p.Player_Name ?? '').trim()]));
     D.subsets = rows(sub); D.products = rows(prod); D.cards = rows(cards); D.parallels = rows(pars); D.exc = rows(exc);
@@ -315,15 +348,18 @@
       c.playerNames = refs(c.Players).map((id) => playerName.get(id)).filter(Boolean);
       c.name = (typeof c.Card_Name === 'string' && c.Card_Name.trim()) || c.playerNames.join(' / ') || '(No player)';
       // A card can list several teams ("A / B"); each one is a team in its own right for grouping and filters.
-      c.teams = [...new Set(String(c.Team || '').split(' / ').map((t) => t.trim()).filter(Boolean))];
-      c.search = (c.name + ' ' + c.playerNames.join(' ') + ' ' + c.Team).toLowerCase();
+      // baseTeam(s) is what the doc says; c.Team and c.teams are what the views use, after custom teams (see below).
+      c.baseTeam = String(c.Team || '');
+      c.baseTeams = [...new Set(c.baseTeam.split(' / ').map((t) => t.trim()).filter(Boolean))];
     }
     D.cards.sort((a, b) => (a.Subset - b.Subset) || (a.Card_Number - b.Card_Number));
     D.totalOnes = D.cards.reduce((n, c) => n + c.ones.length, 0);
-    D.teams = [...new Set(D.cards.flatMap((c) => c.teams))].sort();
     D.players = [...new Set(D.cards.flatMap((c) => c.playerNames))].sort();
-    D.playerTeam = new Map();
-    for (const c of D.cards) for (const n of c.playerNames) if (!D.playerTeam.has(n) && !c.Team.includes(' / ')) D.playerTeam.set(n, c.Team);
+    D.baseTeamNames = new Set(D.cards.flatMap((c) => c.baseTeams));
+    // A player's own team, from her single-team cards; used to place each player on a shared card.
+    D.basePlayerTeam = new Map();
+    for (const c of D.cards) for (const n of c.playerNames) if (!D.basePlayerTeam.has(n) && c.baseTeams.length === 1) D.basePlayerTeam.set(n, c.baseTeams[0]);
+    applyCustomTeams();
     setPulls(pulls);
     bind();
     render();
@@ -336,6 +372,161 @@
   }
   async function reloadPulls() { setPulls(await source.fetch('Pulls')); render(); }
   const pullOf = (c, p) => D.pulls.get(c.id + ':' + p.id);
+
+  // ---------- custom teams ----------
+  // A visitor's own teams, kept only in this browser (localStorage "cl:customTeams"), never in the doc. Every set's
+  // widget loads from the same site, so the teams follow the visitor across checklists. Players are matched by name
+  // (case and accents ignored), and each player is on at most one custom team.
+  // Custom teams override the doc: a claimed player's cards leave her real team for the custom one. On a shared card,
+  // each player brings her own team, so a card with one claimed player lists the custom team and the other player's
+  // team (shown under both, blended tile, half credit), and a card whose players are all claimed belongs only to the
+  // custom team. The views read c.Team / c.teams, so grouping, filters, shading, search and CSV all follow.
+  const CT_KEY = 'customTeams';
+  const CT_COLORS = ['#7048E8', '#D6336C', '#1C7ED6', '#F08C00', '#2B8A3E', '#0C8599'];
+  const norm = (s) => String(s ?? '').normalize('NFKD').replace(/[̀-ͯ]/g, '').trim().toLowerCase();
+  function loadCT() {
+    const raw = store.get(CT_KEY, null) || {};
+    const teams = (Array.isArray(raw.teams) ? raw.teams : []).map((t, i) => ({
+      id: String(t && t.id || 'ct' + Date.now().toString(36) + i),
+      name: String(t && t.name || '').trim(),
+      color: /^#[0-9a-f]{6}$/i.test(t && t.color) ? t.color : CT_COLORS[i % CT_COLORS.length],
+      players: [...new Set((Array.isArray(t && t.players) ? t.players : []).map((p) => String(p).trim()).filter(Boolean))],
+    })).filter((t) => t.name);
+    return { on: raw.on !== false, teams };
+  }
+  let CT = loadCT();
+  const saveCT = () => store.set(CT_KEY, CT);
+
+  // Same tint as the Teams table's Tint formula: keep the hue, pale it (lightness .89, saturation clamped to .45–.75),
+  // neutral gray for colors with no usable hue, and lighten until text keeps 7:1 contrast with the ink #14212E.
+  function tintOf(hex) {
+    const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || '').trim()); if (!m) return null;
+    const [r, g, b] = [0, 2, 4].map((i) => parseInt(m[1].slice(i, i + 2), 16) / 255);
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b), L = (mx + mn) / 2;
+    let H = 0, S = 0;
+    if (mx !== mn) {
+      const d = mx - mn;
+      S = L <= 0.5 ? d / (mx + mn) : d / (2 - mx - mn);
+      const rc = (mx - r) / d, gc = (mx - g) / d, bc = (mx - b) / d;
+      H = (r === mx ? bc - gc : g === mx ? 2 + rc - bc : 4 + gc - rc) / 6;
+      H = ((H % 1) + 1) % 1;
+    }
+    let S2, L2;
+    if (S < 0.12 || mx - mn < 0.08) { S2 = 0; L2 = 0.88; } else { S2 = Math.min(Math.max(S, 0.45), 0.75); L2 = 0.89; }
+    const v = (m1, m2, h) => { h = ((h % 1) + 1) % 1; return h < 1 / 6 ? m1 + (m2 - m1) * h * 6 : h < 0.5 ? m2 : h < 2 / 3 ? m1 + (m2 - m1) * (2 / 3 - h) * 6 : m1; };
+    const hls = (h, l, s) => { if (!s) return [l, l, l]; const m2 = l <= 0.5 ? l * (1 + s) : l + s - l * s, m1 = 2 * l - m2; return [v(m1, m2, h + 1 / 3), v(m1, m2, h), v(m1, m2, h - 1 / 3)]; };
+    const lum = (rgb) => { const c = rgb.map((x) => x / 255).map((x) => x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
+    const ink = lum([0x14, 0x21, 0x2E]);
+    let rgb;
+    for (;;) {
+      // Python's round() rounds halves to even; match it so tints agree with the doc's to the digit.
+      rgb = hls(H, L2, S2).map((x) => { const y = x * 255, f = Math.floor(y); return y - f === 0.5 ? (f % 2 ? f + 1 : f) : Math.round(y); });
+      if ((lum(rgb) + 0.05) / (ink + 0.05) >= 7 || L2 >= 0.97) break;
+      L2 += 0.01;
+    }
+    return '#' + rgb.map((x) => x.toString(16).padStart(2, '0').toUpperCase()).join('');
+  }
+  window.__tintOf = tintOf; // for the tests
+
+  function applyCustomTeams() {
+    const claims = new Map();
+    if (CT.on) for (const t of CT.teams) for (const p of t.players) claims.set(norm(p), t.name);
+    D.teamTint = new Map(D.baseTint);
+    if (CT.on) for (const t of CT.teams) { const x = tintOf(t.color); if (x) D.teamTint.set(t.name, x); }
+    D.customNames = new Set();
+    // Which of a shared card's teams an unclaimed player brings: her own team when it's on the card, else the team in
+    // her position (when there's one team per player), else all of the card's teams.
+    const ownTeams = (c, n, i) => {
+      if (c.baseTeams.length <= 1) return c.baseTeams;
+      const known = D.basePlayerTeam.get(n);
+      if (known && c.baseTeams.includes(known)) return [known];
+      return c.baseTeams.length === c.playerNames.length ? [c.baseTeams[i]] : c.baseTeams;
+    };
+    for (const c of D.cards) {
+      const claimed = c.playerNames.map((n) => claims.get(norm(n)));
+      if (!claimed.some(Boolean)) { c.teams = c.baseTeams; c.Team = c.baseTeam; }
+      else {
+        c.teams = [...new Set(c.playerNames.flatMap((n, i) => claimed[i] ? [claimed[i]] : ownTeams(c, n, i)))];
+        c.Team = c.teams.join(' / ');
+        claimed.forEach((t) => t && D.customNames.add(t));
+      }
+      c.search = (c.name + ' ' + c.playerNames.join(' ') + ' ' + c.Team).toLowerCase();
+    }
+    D.teams = [...new Set(D.cards.flatMap((c) => c.teams))].sort((a, b) => (D.customNames.has(b) - D.customNames.has(a)) || a.localeCompare(b));
+    D.playerTeam = new Map();
+    for (const n of D.players) { const t = claims.get(norm(n)) || D.basePlayerTeam.get(n); if (t) D.playerTeam.set(n, t); }
+    // A team filter on a team that no longer has cards (renamed, emptied, turned off) would hide everything.
+    for (const t of [...S.f.team]) if (!D.teams.includes(t)) S.f.team.delete(t);
+  }
+  const ctActive = () => CT.on && D.customNames && D.customNames.size > 0;
+  function ctChanged() { S.ctDirty = true; saveCT(); applyCustomTeams(); render(); }
+  // Another widget (or another set's tab) changed the custom teams: pick them up.
+  window.addEventListener('storage', (e) => { if (e.key === 'cl:' + CT_KEY && D.cards) { CT = loadCT(); applyCustomTeams(); render(); } });
+
+  const nameTaken = (name, exceptId) => {
+    const k = norm(name);
+    return [...D.baseTeamNames].some((t) => norm(t) === k) || CT.teams.some((t) => t.id !== exceptId && norm(t.name) === k);
+  };
+  function newTeam() {
+    let i = CT.teams.length + 1, name;
+    do { name = 'My team' + (i > 1 ? ' ' + i : ''); i++; } while (nameTaken(name));
+    const t = { id: 'ct' + Date.now().toString(36), name, color: CT_COLORS[CT.teams.length % CT_COLORS.length], players: [] };
+    CT.teams.push(t); CT.on = true;
+    S.ctFocus = { id: t.id, field: 'name' };
+    ctChanged();
+  }
+  // Claim a player for a team; she leaves any other custom team (a player is on one custom team at most).
+  function claimPlayer(teamId, input) {
+    const t = CT.teams.find((x) => x.id === teamId); if (!t) return;
+    const k = norm(input); if (!k) return;
+    const name = D.players.find((p) => norm(p) === k);
+    if (!name) { toast(`No player named “${input.trim()}” in this set`); return; }
+    if (t.players.some((p) => norm(p) === k)) { toast(`${name} is already on ${t.name}`); return; }
+    const from = CT.teams.find((x) => x !== t && x.players.some((p) => norm(p) === k));
+    if (from) from.players = from.players.filter((p) => norm(p) !== k);
+    t.players.push(name);
+    S.ctFocus = { id: t.id, field: 'add' };
+    ctChanged();
+    toast(from ? `Moved ${name} from ${from.name} to ${t.name}` : `${name} added to ${t.name}`);
+  }
+  function renameTeam(teamId, value) {
+    const t = CT.teams.find((x) => x.id === teamId); if (!t) return;
+    const name = value.trim();
+    if (!name || name === t.name) { renderCustomTeams(); return; }
+    if (nameTaken(name, t.id)) { toast(`“${name}” is already a team name`); renderCustomTeams(); return; }
+    for (const g of Object.values(S.taps)) if (g.has('t' + t.name)) { g.set('t' + name, g.get('t' + t.name)); g.delete('t' + t.name); }
+    if (S.f.team.delete(t.name)) S.f.team.add(name);
+    t.name = name;
+    ctChanged();
+  }
+
+  // Share codes: the teams as base64 JSON ("CT1:…"), for backup and for passing a team to someone else.
+  const exportCode = () => 'CT1:' + btoa(unescape(encodeURIComponent(JSON.stringify({ teams: CT.teams.map((t) => ({ n: t.name, c: t.color, p: t.players })) }))));
+  function importCode(code) {
+    let data;
+    try { data = JSON.parse(decodeURIComponent(escape(atob(String(code).trim().replace(/^CT1:/, ''))))); } catch (e) { toast('That code isn’t a custom teams code'); return; }
+    const incoming = (Array.isArray(data && data.teams) ? data.teams : []).filter((t) => t && String(t.n || '').trim());
+    if (!incoming.length) { toast('That code has no teams in it'); return; }
+    for (const x of incoming) {
+      let name = String(x.n).trim();
+      const players = [...new Set((Array.isArray(x.p) ? x.p : []).map((p) => String(p).trim()).filter(Boolean))];
+      let t = CT.teams.find((y) => norm(y.name) === norm(name));
+      if (!t) {
+        if ([...D.baseTeamNames].some((b) => norm(b) === norm(name))) name += ' (custom)';
+        t = { id: 'ct' + Date.now().toString(36) + CT.teams.length, name, color: CT_COLORS[CT.teams.length % CT_COLORS.length], players: [] };
+        CT.teams.push(t);
+      }
+      if (/^#[0-9a-f]{6}$/i.test(x.c)) t.color = x.c;
+      t.players = players;
+      // The imported team wins any player it shares with another custom team.
+      const ks = new Set(players.map(norm));
+      for (const y of CT.teams) if (y !== t) y.players = y.players.filter((p) => !ks.has(norm(p)));
+    }
+    CT.on = true;
+    S.ctShare = false;
+    ctChanged();
+    toast(`Imported ${incoming.length} team${incoming.length === 1 ? '' : 's'}`);
+  }
 
   // ---------- filtering ----------
   function cardMatches(c) {
@@ -373,7 +564,7 @@
     team: (c) => (c.teams.length ? c.teams : ['(No team)']).map((t) => ['t' + t, t]),
     player: (c) => (c.playerNames.length ? c.playerNames : ['(No player)']).map((n) => ['p' + n, n]),
   };
-  const groupSort = { subset: (a, b) => a.first.Subset - b.first.Subset, team: (a, b) => a.name.localeCompare(b.name), player: (a, b) => a.name.localeCompare(b.name) };
+  const groupSort = { subset: (a, b) => a.first.Subset - b.first.Subset, team: (a, b) => (D.customNames.has(b.name) - D.customNames.has(a.name)) || a.name.localeCompare(b.name), player: (a, b) => a.name.localeCompare(b.name) };
   function groupCards(cards) {
     const by = S.groupBy[S.tab];
     const m = new Map();
@@ -431,7 +622,8 @@
     $('#q').oninput = (e) => { S.q = e.target.value.trim().toLowerCase(); S.sugIdx = -1; render(); };
     $('#q').onkeydown = onSearchKey;
     $('#q').onfocus = () => renderSuggest();
-    $('#fbtn').onclick = () => { S.panelOpen = !S.panelOpen; renderFilters(); };
+    $('#fbtn').onclick = () => { S.panelOpen = !S.panelOpen; if (S.panelOpen) S.ctOpen = false; renderFilters(); renderCustomTeams(); };
+    bindCustomTeams();
     const togglePill = (e) => {
       const b = e.target.closest('[data-f]'); if (!b) return false;
       const key = b.dataset.f, v = b.dataset.v, set = S.f[key], inPanel = !!b.closest('#filters');
@@ -488,11 +680,108 @@
     if (e && e.detail === 0) document.querySelector('.tab[aria-selected="true"]')?.focus({ preventScroll: true });
   }
 
+  // ---------- My teams panel ----------
+  // One card per custom team: color, name (edit in place), claimed players as removable chips (dimmed when they're not
+  // in this set), and a box to claim another player from this set. The switch turns every custom team off without
+  // deleting them. The panel and the Filters panel take turns being open.
+  // soft: called from a general render; leaves the panel alone while the visitor is typing in it.
+  function renderCustomTeams(soft) {
+    const btn = $('#ctbtn'), panel = $('#ctpanel');
+    const active = ctActive();
+    btn.classList.toggle('on', active);
+    btn.setAttribute('aria-expanded', S.ctOpen);
+    $('#ctcount').textContent = CT.teams.length ? ' ' + CT.teams.length : '';
+    btn.setAttribute('aria-label', `My teams${CT.teams.length ? `, ${CT.teams.length}` : ''}${active ? ', in effect' : ''}`);
+    const note = $('#ctnote');
+    note.hidden = !active;
+    if (active) note.innerHTML = `Custom teams on · <button class="link" id="ctoff" style="padding:0">turn off</button>`;
+    panel.hidden = !S.ctOpen;
+    if (!S.ctOpen) return;
+    if (soft && !S.ctDirty && panel.contains(document.activeElement) && panel.childElementCount) return;
+    S.ctDirty = false;
+    $('#ctplayers').innerHTML = D.players.map((p) => `<option value="${esc(p)}">`).join('');
+    const inSet = new Set(D.players.map(norm));
+    const teamsHtml = CT.teams.map((t) => {
+      const here = t.players.filter((p) => inSet.has(norm(p))).length;
+      const tint = tintOf(t.color) || '';
+      const chips = t.players.map((p) => { const away = !inSet.has(norm(p));
+        return `<button class="chip ctp${away ? ' away' : ''}" style="--blk:${tint}" data-ctrm="${esc(p)}" aria-label="Remove ${esc(p)} from ${esc(t.name)}"${away ? ' title="Not in this set"' : ''}>${esc(p)}<span aria-hidden="true">${ICON.x}</span></button>`; }).join('');
+      const confirming = S.ctConfirm === t.id;
+      return `<div class="ctteam" data-ct="${esc(t.id)}">
+        <div class="ctrow"><input type="color" value="${esc(t.color)}" data-ctcolor aria-label="Color for ${esc(t.name)}">
+          <input class="ctname" value="${esc(t.name)}" data-ctname aria-label="Team name" maxlength="40">
+          <button class="link ctdel${confirming ? ' confirm' : ''}" data-ctdel>${confirming ? 'Delete team?' : 'Delete'}</button>${confirming ? '<button class="link" data-ctkeep>Keep</button>' : ''}</div>
+        ${chips ? `<div class="ctplayers">${chips}</div>` : ''}
+        <div class="ctadd"><input list="ctplayers" placeholder="Add a player from this set" aria-label="Add a player to ${esc(t.name)}" data-ctadd autocomplete="off"><button class="btn ghost" data-ctaddbtn>Add</button></div>
+        <span class="ctmeta">${t.players.length ? `${here} of ${t.players.length} player${t.players.length === 1 ? '' : 's'} in this set` : 'No players yet'}</span>
+      </div>`;
+    }).join('');
+    panel.innerHTML = `<div class="cthead"><label class="switch"><input type="checkbox" id="cton" ${CT.on ? 'checked' : ''}>Use my teams</label>
+        <button class="link" id="ctsharebtn" aria-expanded="${S.ctShare}">Share or import</button></div>
+      <p class="cthint">Claim players for a team of your own. Their cards move to your team in every view and download. Saved in this browser only, never in the checklist, and shared by every set.</p>
+      ${S.ctShare ? `<div class="ctshare"><label class="flabel" for="ctcode">Your teams as a code</label><textarea id="ctcode" readonly>${esc(CT.teams.length ? exportCode() : '')}</textarea>
+        <span class="row"><button class="btn ghost" id="ctcopy" ${CT.teams.length ? '' : 'disabled'}>Copy code</button></span>
+        <label class="flabel" for="ctimport">Paste a code to add its teams</label><textarea id="ctimport" placeholder="CT1:…"></textarea>
+        <span class="row"><button class="btn ghost" id="ctdoimport">Import</button></span></div>` : ''}
+      ${teamsHtml}
+      <div class="ctfoot"><button class="btn ghost" id="ctnew">+ New team</button></div>`;
+    if (S.ctFocus) {
+      const f = S.ctFocus; S.ctFocus = null;
+      const el = panel.querySelector(`[data-ct="${CSS.escape(f.id)}"] [data-ct${f.field}]`);
+      if (el) { el.focus(); if (f.field === 'name') el.select(); }
+    }
+  }
+  function bindCustomTeams() {
+    const panel = $('#ctpanel');
+    $('#ctbtn').onclick = () => { S.ctOpen = !S.ctOpen; if (S.ctOpen) S.panelOpen = false; S.ctConfirm = null; renderFilters(); renderCustomTeams(); };
+    $('#ctnote').onclick = (e) => { if (e.target.closest('#ctoff')) { CT.on = false; ctChanged(); toast('Custom teams off. Turn them back on under My teams.'); } };
+    const teamOf = (el) => el.closest('[data-ct]')?.dataset.ct;
+    panel.addEventListener('click', (e) => {
+      const t = e.target;
+      if (t.closest('#ctnew')) return newTeam();
+      if (t.closest('#ctsharebtn')) { S.ctShare = !S.ctShare; return renderCustomTeams(); }
+      if (t.closest('#ctdoimport')) return importCode($('#ctimport').value);
+      if (t.closest('#ctcopy')) {
+        const code = $('#ctcode'); code.select();
+        const done = () => toast('Code copied');
+        (navigator.clipboard ? navigator.clipboard.writeText(code.value) : Promise.reject()).then(done, () => { try { document.execCommand('copy') ? done() : toast('Select the code and copy it'); } catch (err) { toast('Select the code and copy it'); } });
+        return;
+      }
+      const id = teamOf(t); if (!id) return;
+      const team = CT.teams.find((x) => x.id === id); if (!team) return;
+      const rm = t.closest('[data-ctrm]');
+      if (rm) { team.players = team.players.filter((p) => p !== rm.dataset.ctrm); S.ctFocus = { id, field: 'add' }; return ctChanged(); }
+      if (t.closest('[data-ctaddbtn]')) return claimPlayer(id, t.closest('[data-ct]').querySelector('[data-ctadd]').value);
+      if (t.closest('[data-ctkeep]')) { S.ctConfirm = null; return renderCustomTeams(); }
+      if (t.closest('[data-ctdel]')) {
+        if (S.ctConfirm !== id) { S.ctConfirm = id; return renderCustomTeams(); }
+        S.ctConfirm = null; CT.teams = CT.teams.filter((x) => x.id !== id);
+        ctChanged(); toast(`Deleted ${team.name}`);
+      }
+    });
+    panel.addEventListener('change', (e) => {
+      const t = e.target;
+      if (t.id === 'cton') { CT.on = t.checked; return ctChanged(); }
+      const id = teamOf(t); if (!id) return;
+      const team = CT.teams.find((x) => x.id === id); if (!team) return;
+      if (t.matches('[data-ctcolor]')) { team.color = t.value; return ctChanged(); }
+      if (t.matches('[data-ctname]')) return renameTeam(id, t.value);
+      // Picking a name from the list (or leaving the box) claims the player, if it's an exact match.
+      if (t.matches('[data-ctadd]') && t.value.trim() && D.players.some((p) => norm(p) === norm(t.value))) return claimPlayer(id, t.value);
+    });
+    panel.addEventListener('keydown', (e) => {
+      const t = e.target;
+      if (e.key !== 'Enter') return;
+      if (t.matches('[data-ctadd]')) { e.preventDefault(); claimPlayer(teamOf(t), t.value); }
+      else if (t.matches('[data-ctname]')) { e.preventDefault(); t.blur(); }
+    });
+  }
+
   // ---------- rendering ----------
   function render() {
     closeMenu();
     document.querySelectorAll('.tab').forEach((b) => b.setAttribute('aria-selected', b.dataset.tab === S.tab));
-    renderFilters(); renderViewbar(); renderSuggest();
+    renderFilters(); renderCustomTeams(true); renderViewbar(); renderSuggest();
     $('#n-ones').textContent = `${D.pulls.size}/${D.totalOnes}`;
     $('#n-checklist').textContent = D.cards.length;
     S.tab === 'checklist' ? renderChecklist() : renderOnes();
