@@ -42,13 +42,13 @@ PAGES = [{"id": 10, "name": "Checklist"}, {"id": 12, "name": "Breakdown"}]
 
 
 def demo_page(browser, tab="checklist", by="subset", w=760, h=900, demo=None, sets=SETS,
-              doc="pCMKPajFwTiuzyVLySNiMT", name="2026 Panini Prizm Black NWSL", custom=None, pages=PAGES):
+              doc="pCMKPajFwTiuzyVLySNiMT", name="2026 Panini Prizm Black NWSL", custom=None, pages=PAGES, url_id=""):
     """The widget in demo mode: data, set list and doc identity come from window globals instead of Grist."""
     js = ("localStorage.clear();"
           f"localStorage.setItem('cl:tab',{json.dumps(json.dumps(tab))});"
           f"localStorage.setItem('cl:groupBy',{json.dumps(json.dumps({'checklist': by, 'ones': by}))});"
           f"window.DEMO_DATA={json.dumps(demo or DEMO)};window.DEMO_SETS={json.dumps(sets)};"
-          f"window.DEMO_DOC_ID={json.dumps(doc)};window.DEMO_DOC_NAME={json.dumps(name)};window.DEMO_PAGES={json.dumps(pages)};")
+          f"window.DEMO_DOC_ID={json.dumps(doc)};window.DEMO_DOC_NAME={json.dumps(name)};window.DEMO_PAGES={json.dumps(pages)};window.DEMO_URL_ID={json.dumps(url_id)};")
     if custom is not None:
         js += f"localStorage.setItem('cl:customTeams',{json.dumps(json.dumps(custom))});"
     f = TMP / f"demo_{tab}_{w}.html"
@@ -765,16 +765,16 @@ def test_navigation(browser):
     items = pg.eval_on_selector_all(".menu.viewmenu .mi", "els => els.map(a => [a.textContent.trim(), a.getAttribute('href'), a.getAttribute('aria-current'), a.target])")
     check("view menu lists Checklist (current) and Breakdown", [i[0] for i in items] == ["Checklist", "Breakdown"] and items[0][2] == "page")
     check("Breakdown links to this doc's Breakdown page, same tab, panels hidden",
-          items[1][1] == "https://docs.getgrist.com/pCMKPajFwTiuzyVLySNiMT/p/12?style=singlePage" and items[1][3] == "_top")
+          items[1][1] == "https://docs.getgrist.com/pCMKPajFwTiu/2026-Panini-Prizm-Black-NWSL/p/12?style=singlePage" and items[1][3] == "_top")
     check("the current view is focused when the menu opens", pg.evaluate("() => document.activeElement.dataset.view") == "checklist")
     pg.keyboard.press("Escape")
     check("Escape closes the view menu and returns focus", not pg.query_selector(".menu") and pg.evaluate("() => document.activeElement.id") == "viewbtn")
     pg.close()
 
-    pg = demo_page(browser, doc="9Abbfx43q1qkGw3t1Qm9BL", name="Checklist Sandbox")
+    pg = demo_page(browser, doc="9Abbfx43q1qkGw3t1Qm9BL", name="Checklist Sandbox", url_id="9Abbfx43q1qk")
     pg.click("#viewbtn")
-    check("an unlisted doc (the sandbox) links its pages by name too",
-          pg.get_attribute('.menu.viewmenu [data-view="breakdown"]', "href") == "https://docs.getgrist.com/9Abbfx43q1qkGw3t1Qm9BL/p/12?style=singlePage")
+    check("an unlisted doc (the sandbox) links its pages by name, on Grist's address for it (urlId and slug)",
+          pg.get_attribute('.menu.viewmenu [data-view="breakdown"]', "href") == "https://docs.getgrist.com/9Abbfx43q1qk/Checklist-Sandbox/p/12?style=singlePage")
     pg.close()
 
     pg = demo_page(browser, doc="9Abbfx43q1qkGw3t1Qm9BL", name="Checklist Sandbox", pages=[{"id": 10, "name": "Checklist"}])
@@ -795,7 +795,7 @@ def test_navigation(browser):
     pg.click("#viewbtn")
     check("breakdown: view menu marks Breakdown and links back to Checklist",
           pg.get_attribute('.menu.viewmenu [data-view="breakdown"]', "aria-current") == "page"
-          and pg.get_attribute('.menu.viewmenu [data-view="checklist"]', "href") == "https://docs.getgrist.com/pCMKPajFwTiuzyVLySNiMT/p/10?style=singlePage")
+          and pg.get_attribute('.menu.viewmenu [data-view="checklist"]', "href") == "https://docs.getgrist.com/pCMKPajFwTiu/2026-Panini-Prizm-Black-NWSL/p/10?style=singlePage")
     pg.keyboard.press("Escape")
     pg.click("#setbtn")
     hrefs = dict(pg.eval_on_selector_all(".menu.setmenu a.mi", "els => els.map(a => [a.querySelector('b').textContent, a.getAttribute('href')])"))
@@ -831,7 +831,7 @@ def test_in_grist_frame(browser):
           getDocName: async () => DOC, applyUserActions: async () => {{}} }} }};
         const realFetch = window.fetch;
         window.fetch = (u, o) => String(u).startsWith('https://docs.example.com/api/docs/')
-          ? Promise.resolve(API_OK ? new Response(JSON.stringify({{ name: 'Checklist Sandbox' }})) : new Response('denied', {{ status: 403 }}))
+          ? Promise.resolve(API_OK ? new Response(JSON.stringify({{ name: 'Checklist Sandbox', urlId: DOC.slice(0, 12) }})) : new Response('denied', {{ status: 403 }}))
           : realFetch(u, o);
         </script>"""
         (site / "widgets/w/index.html").write_text(WIDGET.read_text().replace(PLUGIN_TAG, stub))
@@ -849,7 +849,7 @@ def test_in_grist_frame(browser):
             check("in Grist: the shared stats file loads from beside the widget", frame.evaluate("() => !!window.SetStats"))
             frame.click("#viewbtn")
             check("in Grist: Breakdown links to the doc's page named Breakdown, on the doc's own host",
-                  frame.get_attribute('.menu.viewmenu [data-view="breakdown"]', "href") == f"https://docs.example.com/{doc}/p/12?style=singlePage")
+                  frame.get_attribute('.menu.viewmenu [data-view="breakdown"]', "href") == f"https://docs.example.com/{doc[:12]}/Checklist-Sandbox/p/12?style=singlePage")
         pg.close()
 
 

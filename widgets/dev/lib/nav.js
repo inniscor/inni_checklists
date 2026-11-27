@@ -8,7 +8,9 @@
 // name, which opens the set menu. Switching sets keeps the view: from Breakdown you land on the other set's Breakdown.
 //
 // Where the links go:
-//   This doc's pages: from its page list (the pages named "Checklist" and "Breakdown"), as /<doc>/p/<page id>.
+//   This doc's pages: from its page list (the pages named "Checklist" and "Breakdown"), on Grist's address for the
+//   doc, /<urlId>/<slug>/p/<page id> (e.g. /9Abbfx43q1qk/Checklist-Sandbox/p/12). Grist reads a bare /<id>/p/12 as a
+//   slug of "p" and drops the page, so the slug matters.
 //   Other sets: sets.json (two folders up, at the site root). Each set has `url` (its Checklist page) and may have
 //   `breakdown` (its Breakdown page); without `breakdown`, a set opens on its Checklist. A set without `url`
 //   ("Coming Soon...") is listed, dimmed. Sets are grouped by year; up to three marked "featured" also appear in a
@@ -104,12 +106,12 @@
   async function mount({ view, demo, inGrist }) {
     N.view = view === 'breakdown' ? 'breakdown' : 'checklist';
     injectStyles();
-    let data = null, docId = '', docName = '', origin = '', pages = [];
+    let data = null, docId = '', docName = '', origin = '', pages = [], urlId = '';
     try {
       if (demo) data = window.DEMO_SETS || null;
       else { const r = await fetch(new URL('../../sets.json', location.href)); if (r.ok) data = await r.json(); }
     } catch (e) {}
-    if (demo) { docId = window.DEMO_DOC_ID || ''; docName = window.DEMO_DOC_NAME || ''; origin = 'https://docs.getgrist.com'; pages = window.DEMO_PAGES || []; }
+    if (demo) { docId = window.DEMO_DOC_ID || ''; docName = window.DEMO_DOC_NAME || ''; origin = 'https://docs.getgrist.com'; pages = window.DEMO_PAGES || []; urlId = window.DEMO_URL_ID || ''; }
     else if (inGrist) {
       // getDocName() returns the doc's ID rather than its title, so the title comes from the REST API (GET /api/docs/:id)
       // using the widget's read-only access token. If that fails the title falls back to a generic one, never the ID.
@@ -118,7 +120,7 @@
         docId = (/\/docs\/([^/?#]+)/.exec(t.baseUrl || '') || [])[1] || '';
         origin = new URL(t.baseUrl).origin;
         const r = await fetch(`${t.baseUrl}?auth=${encodeURIComponent(t.token)}`);
-        if (r.ok) { const n = String((await r.json()).name || '').trim(); if (n && n !== docId) docName = n; }
+        if (r.ok) { const j = await r.json(), n = String(j.name || '').trim(); if (n && n !== docId) docName = n; urlId = String(j.urlId || ''); }
       } catch (e) {}
       if (!docId) try { docId = await grist.docApi.getDocName(); } catch (e) {}
       // This doc's pages, to link Checklist and Breakdown by name (full access lets a widget read the page list).
@@ -137,15 +139,20 @@
     N.current = N.all.find((x) => docId && x.doc === docId) || null;
     N.docName = docName;
     // This doc's two pages: found by name in its page list; else the current set's sets.json links.
+    // The doc's address: a listed set's own link (exact), else Grist's urlId and a slug of the doc's name.
+    const base = N.current && N.current.url ? N.current.url.replace(/\/p\/\d+.*$/, '')
+      : origin && docId ? `${origin}/${urlId || docId}/${slugOf(docName) || 'doc'}` : '';
     const byName = (n) => pages.find((x) => x.name.toLowerCase() === n);
     N.viewUrls = {};
     for (const [k] of VIEWS) {
       const pg = byName(k);
-      if (pg && origin && docId) N.viewUrls[k] = `${origin}/${docId}/p/${pg.id}?style=singlePage`;
+      if (pg && base) N.viewUrls[k] = `${base}/p/${pg.id}?style=singlePage`;
       else if (N.current) N.viewUrls[k] = k === 'checklist' ? N.current.url : N.current.breakdown;
     }
     render();
   }
+  // Grist's slug for a doc name: runs of anything but letters and digits become '-'.
+  const slugOf = (name) => String(name || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
   // Where a set opens from this page: the same view when the set has it, else its Checklist.
   const setUrl = (x) => (N.view === 'breakdown' && x.breakdown) || x.url;
 
