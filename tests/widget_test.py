@@ -791,6 +791,7 @@ def test_navigation(browser):
     sets = json.loads(json.dumps(SETS))
     crown = next(x for y in sets["years"] for x in y["sets"] if x["name"] == "Crown Royale")
     crown["breakdown"] = crown["url"].replace("/p/10", "/p/12")
+    next(x for y in sets["years"] for x in y["sets"] if x["name"] == "Prizm Black").pop("breakdown", None)  # one set without a Breakdown
     pg = dash_page(browser, sets=sets)
     pg.click("#viewbtn")
     check("breakdown: view menu marks Breakdown and links back to Checklist",
