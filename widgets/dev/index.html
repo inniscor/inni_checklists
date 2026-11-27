@@ -218,6 +218,8 @@
   .switch input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform .15s; box-shadow: 0 1px 2px rgba(20,33,46,.3); }
   .switch input:checked { background: var(--pitch); } .switch input:checked::after { transform: translateX(14px); }
   .ctteam { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px 10px; margin-top: 10px; }
+  .ctteam.off .ctplayers, .ctteam.off .ctname, .ctteam.off input[type=color] { opacity: .5; }
+  .switch.sm input { width: 28px; height: 16px; } .switch.sm input::after { width: 12px; height: 12px; } .switch.sm input:checked::after { transform: translateX(12px); }
   .ctrow { display: flex; align-items: center; gap: 8px; }
   .ctrow input[type=color] { flex: none; width: 30px; height: 30px; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: none; cursor: pointer; }
   .ctname { flex: 1; min-width: 0; padding: 5px 8px; border: 1px solid transparent; border-radius: 6px; background: transparent; font-family: var(--cond); font-weight: 700; font-size: 19px; }
@@ -234,6 +236,7 @@
   .ctshare { margin-top: 10px; display: grid; gap: 6px; }
   .ctshare textarea { width: 100%; min-height: 56px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; font: 12.5px/1.4 ui-monospace, monospace; resize: vertical; }
   .ctshare .row { margin-top: 0; }
+  .ctpanel.alloff .ctteam { opacity: .6; }
   .ctnote { font-size: 13px; color: var(--pitch); font-weight: 600; }
 </style>
 </head>
@@ -391,6 +394,7 @@
       name: String(t && t.name || '').trim(),
       color: /^#[0-9a-f]{6}$/i.test(t && t.color) ? t.color : CT_COLORS[i % CT_COLORS.length],
       players: [...new Set((Array.isArray(t && t.players) ? t.players : []).map((p) => String(p).trim()).filter(Boolean))],
+      on: !(t && t.on === false),
     })).filter((t) => t.name);
     return { on: raw.on !== false, teams };
   }
@@ -430,9 +434,11 @@
 
   function applyCustomTeams() {
     const claims = new Map();
-    if (CT.on) for (const t of CT.teams) for (const p of t.players) claims.set(norm(p), t.name);
+    // The switch at the top turns every custom team off; each team also has its own switch.
+    const live = CT.on ? CT.teams.filter((t) => t.on) : [];
+    for (const t of live) for (const p of t.players) claims.set(norm(p), t.name);
     D.teamTint = new Map(D.baseTint);
-    if (CT.on) for (const t of CT.teams) { const x = tintOf(t.color); if (x) D.teamTint.set(t.name, x); }
+    for (const t of live) { const x = tintOf(t.color); if (x) D.teamTint.set(t.name, x); }
     D.customNames = new Set();
     // Which of a shared card's teams an unclaimed player brings: her own team when it's on the card, else the team in
     // her position (when there's one team per player), else all of the card's teams.
@@ -470,7 +476,7 @@
   function newTeam() {
     let i = CT.teams.length + 1, name;
     do { name = 'My team' + (i > 1 ? ' ' + i : ''); i++; } while (nameTaken(name));
-    const t = { id: 'ct' + Date.now().toString(36), name, color: CT_COLORS[CT.teams.length % CT_COLORS.length], players: [] };
+    const t = { id: 'ct' + Date.now().toString(36), name, color: CT_COLORS[CT.teams.length % CT_COLORS.length], players: [], on: true };
     CT.teams.push(t); CT.on = true;
     S.ctFocus = { id: t.id, field: 'name' };
     ctChanged();
@@ -501,7 +507,7 @@
   }
 
   // Share codes: the teams as base64 JSON ("CT1:…"), for backup and for passing a team to someone else.
-  const exportCode = () => 'CT1:' + btoa(unescape(encodeURIComponent(JSON.stringify({ teams: CT.teams.map((t) => ({ n: t.name, c: t.color, p: t.players })) }))));
+  const exportCode = () => 'CT1:' + btoa(unescape(encodeURIComponent(JSON.stringify({ teams: CT.teams.map((t) => ({ n: t.name, c: t.color, p: t.players, ...(t.on ? {} : { o: false }) })) }))));
   function importCode(code) {
     let data;
     try { data = JSON.parse(decodeURIComponent(escape(atob(String(code).trim().replace(/^CT1:/, ''))))); } catch (e) { toast('That code isn’t a custom teams code'); return; }
@@ -513,11 +519,12 @@
       let t = CT.teams.find((y) => norm(y.name) === norm(name));
       if (!t) {
         if ([...D.baseTeamNames].some((b) => norm(b) === norm(name))) name += ' (custom)';
-        t = { id: 'ct' + Date.now().toString(36) + CT.teams.length, name, color: CT_COLORS[CT.teams.length % CT_COLORS.length], players: [] };
+        t = { id: 'ct' + Date.now().toString(36) + CT.teams.length, name, color: CT_COLORS[CT.teams.length % CT_COLORS.length], players: [], on: true };
         CT.teams.push(t);
       }
       if (/^#[0-9a-f]{6}$/i.test(x.c)) t.color = x.c;
       t.players = players;
+      t.on = x.o !== false;
       // The imported team wins any player it shares with another custom team.
       const ks = new Set(players.map(norm));
       for (const y of CT.teams) if (y !== t) y.players = y.players.filter((p) => !ks.has(norm(p)));
@@ -707,18 +714,19 @@
       const chips = t.players.map((p) => { const away = !inSet.has(norm(p));
         return `<button class="chip ctp${away ? ' away' : ''}" style="--blk:${tint}" data-ctrm="${esc(p)}" aria-label="Remove ${esc(p)} from ${esc(t.name)}"${away ? ' title="Not in this set"' : ''}>${esc(p)}<span aria-hidden="true">${ICON.x}</span></button>`; }).join('');
       const confirming = S.ctConfirm === t.id;
-      return `<div class="ctteam" data-ct="${esc(t.id)}">
-        <div class="ctrow"><input type="color" value="${esc(t.color)}" data-ctcolor aria-label="Color for ${esc(t.name)}">
+      return `<div class="ctteam${t.on ? '' : ' off'}" data-ct="${esc(t.id)}">
+        <div class="ctrow"><label class="switch sm" title="${t.on ? 'On' : 'Off'}"><input type="checkbox" data-cton ${t.on ? 'checked' : ''} aria-label="Use ${esc(t.name)}"></label><input type="color" value="${esc(t.color)}" data-ctcolor aria-label="Color for ${esc(t.name)}">
           <input class="ctname" value="${esc(t.name)}" data-ctname aria-label="Team name" maxlength="40">
           <button class="link ctdel${confirming ? ' confirm' : ''}" data-ctdel>${confirming ? 'Delete team?' : 'Delete'}</button>${confirming ? '<button class="link" data-ctkeep>Keep</button>' : ''}</div>
         ${chips ? `<div class="ctplayers">${chips}</div>` : ''}
         <div class="ctadd"><input list="ctplayers" placeholder="Add a player from this set" aria-label="Add a player to ${esc(t.name)}" data-ctadd autocomplete="off"><button class="btn ghost" data-ctaddbtn>Add</button></div>
-        <span class="ctmeta">${t.players.length ? `${here} of ${t.players.length} player${t.players.length === 1 ? '' : 's'} in this set` : 'No players yet'}</span>
+        <span class="ctmeta">${t.on ? '' : 'Off · '}${t.players.length ? `${here} of ${t.players.length} player${t.players.length === 1 ? '' : 's'} in this set` : 'No players yet'}</span>
       </div>`;
     }).join('');
+    panel.classList.toggle('alloff', !CT.on);
     panel.innerHTML = `<div class="cthead"><label class="switch"><input type="checkbox" id="cton" ${CT.on ? 'checked' : ''}>Use my teams</label>
-        <button class="link" id="ctsharebtn" aria-expanded="${S.ctShare}">Share or import</button></div>
-      <p class="cthint">Claim players for a team of your own. Their cards move to your team in every view and download. Saved in this browser only, never in the checklist, and shared by every set.</p>
+        <button class="link" id="ctsharebtn" aria-expanded="${S.ctShare}">Share/import</button></div>
+      <p class="cthint">Claim players for a team of your own. Saved in this browser only, never in the checklist, and shared by every set.</p>
       ${S.ctShare ? `<div class="ctshare"><label class="flabel" for="ctcode">Your teams as a code</label><textarea id="ctcode" readonly>${esc(CT.teams.length ? exportCode() : '')}</textarea>
         <span class="row"><button class="btn ghost" id="ctcopy" ${CT.teams.length ? '' : 'disabled'}>Copy code</button></span>
         <label class="flabel" for="ctimport">Paste a code to add its teams</label><textarea id="ctimport" placeholder="CT1:…"></textarea>
@@ -764,6 +772,7 @@
       if (t.id === 'cton') { CT.on = t.checked; return ctChanged(); }
       const id = teamOf(t); if (!id) return;
       const team = CT.teams.find((x) => x.id === id); if (!team) return;
+      if (t.matches('[data-cton]')) { team.on = t.checked; return ctChanged(); }
       if (t.matches('[data-ctcolor]')) { team.color = t.value; return ctChanged(); }
       if (t.matches('[data-ctname]')) return renameTeam(id, t.value);
       // Picking a name from the list (or leaving the box) claims the player, if it's an exact match.

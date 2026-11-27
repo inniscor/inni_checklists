@@ -329,6 +329,33 @@ def test_custom_teams(browser):
     check("importing a code brings its teams", [t["players"] for t in st["teams"]] == [[], ["Trinity Rodman"]] and "Washington Spirit" not in group_names(pg))
     pg.close()
 
+    # Each team has its own switch; the feature switch sits above them.
+    two = {"on": True, "teams": [{"id": "a", "name": "Rodmans", "color": "#7048E8", "players": ["Trinity Rodman"]},
+                                 {"id": "b", "name": "Chawingas", "color": "#D6336C", "players": ["Temwa Chawinga"], "on": False}]}
+    pg = demo_page(browser, "checklist", by="team", custom=two)
+    names = group_names(pg)
+    check("a team that's switched off doesn't claim its players", "Chawingas" not in names and "Rodmans" in names and 4 in cards_in_group(pg, "Kansas City Current"))
+    pg.click("#ctbtn")
+    check("panel says Share/import", pg.inner_text("#ctsharebtn") == "Share/import")
+    check("the explanation is one sentence plus where it's saved", "every view and download" not in pg.inner_text(".cthint"))
+    pg.query_selector_all(".ctteam")[1].query_selector("[data-cton]").click()
+    check("switching a team on applies it", "Chawingas" in group_names(pg) and 4 in cards_in_group(pg, "Chawingas"))
+    pg.query_selector_all(".ctteam")[0].query_selector("[data-cton]").click()
+    names = group_names(pg)
+    check("switching a team off returns its players to their teams", "Rodmans" not in names and "Washington Spirit" in names)
+    check("each team's switch is saved", [t["on"] for t in stored_teams(pg)["teams"]] == [False, True])
+    pg.uncheck("#cton")
+    check("the feature switch turns every team off", not any(n in group_names(pg) for n in ("Rodmans", "Chawingas")))
+    pg.check("#cton")
+    check("turning the feature back on restores each team's own setting", "Chawingas" in group_names(pg) and "Rodmans" not in group_names(pg))
+    pg.click("#ctsharebtn")
+    code = pg.input_value("#ctcode")
+    pg.close()
+    pg = demo_page(browser, "checklist", by="team", custom={"on": True, "teams": []})
+    pg.click("#ctbtn"); pg.click("#ctsharebtn"); pg.fill("#ctimport", code); pg.click("#ctdoimport")
+    check("share codes keep each team's switch", [t["on"] for t in stored_teams(pg)["teams"]] == [False, True])
+    pg.close()
+
     # A team from another set: players missing here are kept but dimmed.
     away = {"on": True, "teams": [{"id": "t1", "name": "Mixed", "color": "#1C7ED6", "players": ["Trinity Rodman", "Alex Morgan"]}]}
     pg = demo_page(browser, "checklist", by="team", custom=away, w=390)
