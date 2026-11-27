@@ -234,7 +234,8 @@ def test_custom_teams(browser):
     pg = demo_page(browser, "checklist", by="team")
     got = pg.evaluate(f"() => Object.fromEntries(Object.keys({json.dumps(DOC_TINTS)}).map((c) => [c, window.__tintOf(c)]))")
     check("custom team tint matches the doc's Tint formula for all 16 club colors", got == DOC_TINTS)
-    check("no custom teams: My teams marker is off", pg.is_hidden("#ctnote") and "on" not in (pg.get_attribute("#custbtn", "class") or ""))
+    check("no custom teams: Customize shows no dot", pg.is_hidden("#custbtn .cdot") and "on" not in (pg.get_attribute("#custbtn", "class") or "").split())
+    check("there's no custom-teams line in the summary", pg.query_selector("#ctnote") is None)
     pg.close()
 
     # Override: Rodman (Washington's only player) and Chawinga (on two shared cards) move to Trinity Squared.
@@ -255,7 +256,7 @@ def test_custom_teams(browser):
     check("shared card blends the custom tint with the teammate's team", "90deg" in st and tint in st and "#D5F1F1" in st)
     heads = {h.inner_text().split("\n")[0].strip(): h.get_attribute("style") or "" for h in pg.query_selector_all("#list .ghead")}
     check("custom team header is tinted", tint in heads["Trinity Squared"])
-    check("marker shows while custom teams are in effect", pg.is_visible("#ctnote") and "on" in pg.get_attribute("#custbtn", "class"))
+    check("Customize shows its dot while custom teams are in effect", pg.is_visible("#custbtn .cdot") and "on" in pg.get_attribute("#custbtn", "class").split())
     rows = {r["Card Number"] + r["Subset"]: r for r in csv_rows(pg)}
     check("CSV: a claimed card's Team is the custom team", rows["55Base"]["Team"] == "Trinity Squared")
     check("CSV: a shared card lists both teams", rows["10Connections"]["Team"] in ("Trinity Squared / Kansas City Current", "Kansas City Current / Trinity Squared"))
@@ -264,7 +265,10 @@ def test_custom_teams(browser):
           pg.query_selector('#filters [data-f="team"][data-v="Trinity Squared"]') is not None and pg.query_selector('#filters [data-f="team"][data-v="Washington Spirit"]') is None)
     pg.click('#filters [data-f="team"][data-v="Trinity Squared"]')
     check("filtering on the custom team shows only its group", group_names(pg) == ["Trinity Squared"])
-    pg.click("#ctoff")
+    pg.click("#custbtn")
+    pg.uncheck("#cton")
+    pg.keyboard.press("Escape")
+    check("turning custom teams off removes the dot", pg.is_hidden("#custbtn .cdot"))
     names = group_names(pg)
     check("turning custom teams off restores the doc's teams", "Washington Spirit" in names and "Trinity Squared" not in names)
     st = stored_teams(pg)
@@ -302,9 +306,17 @@ def test_custom_teams(browser):
     pg.press("[data-ctadd]", "Enter")
     check("claiming a player adds her chip", pg.query_selector('[data-ctrm="Trinity Rodman"]') is not None)
     check("the new team appears in the list", "Rodmans" in group_names(pg))
-    pg.fill("[data-ctadd]", "Nobody Here")
+    pg.fill("[data-ctadd]", "  Sam   Coffey ")
     pg.press("[data-ctadd]", "Enter")
-    check("a name that isn't in the set is refused", pg.inner_text("#toast").startswith("No player named"))
+    check("a name that isn't in this set is added as typed (spaces tidied)", stored_teams(pg)["teams"][0]["players"] == ["Trinity Rodman", "Sam Coffey"])
+    check("it's shown dimmed and the notice says it isn't in this set",
+          "away" in pg.get_attribute('[data-ctrm="Sam Coffey"]', "class") and "(not in this set)" in pg.inner_text("#toast"))
+    check("it doesn't change the checklist", "Rodmans" in group_names(pg) and len(group_names(pg)) == 6)
+    pg.fill("[data-ctadd]", "sam coffey")
+    pg.press("[data-ctadd]", "Enter")
+    check("the same name twice is caught (case and accents ignored)", "already on" in pg.inner_text("#toast"))
+    pg.click('[data-ctrm="Sam Coffey"]')
+    check("removing a chip drops the name", stored_teams(pg)["teams"][0]["players"] == ["Trinity Rodman"])
     pg.click("#ctnew")
     second = pg.query_selector_all(".ctteam")[1]
     second.query_selector("[data-ctadd]").fill("Trinity Rodman")
@@ -361,6 +373,11 @@ def test_custom_teams(browser):
     pg = demo_page(browser, "checklist", by="team", custom={"on": True, "teams": []})
     pg.click("#custbtn"); pg.click("#ctsharebtn"); pg.fill("#ctimport", code); pg.click("#ctdoimport")
     check("share codes keep each team's switch", [t["on"] for t in stored_teams(pg)["teams"]] == [False, True])
+    pg.close()
+
+    # A name typed in another set (lower case, no accents) claims the player here.
+    pg = demo_page(browser, "checklist", by="team", custom={"on": True, "teams": [{"id": "p", "name": "Personal Collection", "color": "#0C8599", "players": ["esther gonzalez", "Sam Coffey"]}]})
+    check("a typed name claims the matching player in this set", 2 in cards_in_group(pg, "Personal Collection"))
     pg.close()
 
     # A team from another set: players missing here are kept but dimmed.

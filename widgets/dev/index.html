@@ -271,7 +271,6 @@
   .ctshare textarea { width: 100%; min-height: 56px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; font: 12.5px/1.4 ui-monospace, monospace; resize: vertical; }
   .ctshare .row { margin-top: 0; }
   .ctpanel.alloff .ctteam { opacity: .6; }
-  .ctnote { font-size: 13px; color: var(--pitch); font-weight: 600; }
 </style>
 </head>
 <body>
@@ -300,7 +299,7 @@
   <datalist id="ctplayers"></datalist>
   </div>
   <div class="summary">
-    <span class="left"><span id="count"></span><button class="link" id="allgroups"></button><span class="ctnote" id="ctnote" hidden></span></span>
+    <span class="left"><span id="count"></span><button class="link" id="allgroups"></button></span>
     <button class="btn ghost" id="download"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.5v7.5m0 0L5 7m3 3 3-3M3 12.5h10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>CSV</button>
     <span id="viewbar"></span>
   </div>
@@ -525,18 +524,22 @@
     ctChanged();
   }
   // Claim a player for a team; she leaves any other custom team (a player is on one custom team at most).
+  // Any name can be added, so one team (e.g. "Personal Collection") can be built from a single checklist: a name that
+  // matches a player in this set takes the set's spelling; any other is kept as typed, shown dimmed here, and claims
+  // that player in whichever set has her under that name.
   function claimPlayer(teamId, input) {
     const t = CT.teams.find((x) => x.id === teamId); if (!t) return;
-    const k = norm(input); if (!k) return;
-    const name = D.players.find((p) => norm(p) === k);
-    if (!name) { toast(`No player named “${input.trim()}” in this set`); return; }
+    const typed = String(input || '').replace(/\s+/g, ' ').trim().slice(0, 80);
+    const k = norm(typed); if (!k) return;
+    const match = D.players.find((p) => norm(p) === k);
+    const name = match || typed;
     if (t.players.some((p) => norm(p) === k)) { toast(`${name} is already on ${t.name}`); return; }
     const from = CT.teams.find((x) => x !== t && x.players.some((p) => norm(p) === k));
     if (from) from.players = from.players.filter((p) => norm(p) !== k);
     t.players.push(name);
     S.ctFocus = { id: t.id, field: 'add' };
     ctChanged();
-    toast(from ? `Moved ${name} from ${from.name} to ${t.name}` : `${name} added to ${t.name}`);
+    toast((from ? `Moved ${name} from ${from.name} to ${t.name}` : `${name} added to ${t.name}`) + (match ? '' : ' (not in this set)'));
   }
   function renameTeam(teamId, value) {
     const t = CT.teams.find((x) => x.id === teamId); if (!t) return;
@@ -751,9 +754,6 @@
     btn.querySelector('.cdot').hidden = !active;
     btn.setAttribute('aria-expanded', S.ctOpen);
     btn.setAttribute('aria-label', 'Customize' + (active ? ', custom teams on' : ''));
-    const note = $('#ctnote');
-    note.hidden = !active;
-    if (active) note.innerHTML = `Custom teams on · <button class="link" id="ctoff" style="padding:0">turn off</button>`;
     drawer.hidden = $('#ctscrim').hidden = !S.ctOpen;
     if (!S.ctOpen) return;
     if (soft && !S.ctDirty && drawer.contains(document.activeElement) && panel.childElementCount) return;
@@ -776,7 +776,7 @@
         <div class="ctrow">${sw}<input type="color" value="${esc(t.color)}" data-ctcolor aria-label="Color for ${esc(t.name)}">
           <input class="ctname" value="${esc(t.name)}" data-ctname aria-label="Team name" maxlength="40">${chev}</div>
         ${chips ? `<div class="ctplayers">${chips}</div>` : ''}
-        <div class="ctadd"><input list="ctplayers" placeholder="Add a player from this set" aria-label="Add a player to ${esc(t.name)}" data-ctadd autocomplete="off"><button class="btn ghost" data-ctaddbtn>Add</button></div>
+        <div class="ctadd"><input list="ctplayers" placeholder="Add a player" aria-label="Add a player to ${esc(t.name)}" data-ctadd autocomplete="off"><button class="btn ghost" data-ctaddbtn>Add</button></div>
         <div class="ctmetarow"><span class="ctmeta">${meta}</span><span><button class="link ctdel${confirming ? ' confirm' : ''}" data-ctdel>${confirming ? 'Delete team?' : 'Delete team'}</button>${confirming ? '<button class="link" data-ctkeep>Keep</button>' : ''}</span></div>
       </div>`;
     }).join('');
@@ -827,7 +827,7 @@
       if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); }
       else if (!e.shiftKey && i === f.length - 1) { e.preventDefault(); f[0].focus(); }
     });
-    $('#ctnote').onclick = (e) => { if (e.target.closest('#ctoff')) { CT.on = false; ctChanged(); toast('Custom teams off. Turn them back on under Customize.'); } };
+
     const teamOf = (el) => el.closest('[data-ct]')?.dataset.ct;
     panel.addEventListener('click', (e) => {
       const t = e.target;
