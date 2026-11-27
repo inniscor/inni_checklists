@@ -5,6 +5,12 @@ All changes to the checklist widget, newest first. **Unreleased** describes what
 ## Unreleased
 
 ### Added
+- **Stats**: a chart button at the right end of every team and player group header (Checklist and 1/1s tabs, grouped by Team or Player) flips that group's card over to show its stats where its cards were, opening the group if it was closed. The stats: Autos, Case hits, 1/1s live and Cards tiles (share of the set and rank), **Per box** estimates when the product has box configuration, and **Share of the set** by tier with an even-share tick for teams.
+- While a card is flipped, the rest of the list is dimmed and can't be used, and the flipped group can't be collapsed. Filters still work and the numbers follow the Product filter (one product chosen → that product only; other filters don't change them). The chart button, **Back to cards**, Escape or a click on the dimmed list flips it back, showing the group's cards. One group at a time; switching tabs or grouping drops the flip. With reduced motion the card changes without the flip.
+- Custom teams get stats like any team.
+- The stats come from a shared file, `lib/stats.js`, beside the widget, so the dashboard can show the same component when it moves into the repo. It's copied into each release folder with `index.html`.
+
+### Added
 - **Customize**: a button in the top-right corner, across from the set title, opens a side drawer (a bottom sheet with **Done** on phones). Escape, the close button or a tap outside closes it, and focus returns to the button.
 - **My teams**, the drawer's first section: visitors can make their own teams and claim players for them. A switch turns the whole feature off without deleting anything. Each team is a card with its own switch, color and name, and the player and card counts; it opens to edit the name and color, claim players from the set by name, remove them, or delete the team. Cards start closed, except a team with no players yet.
 - Custom teams **override** the doc: a claimed player's cards leave her real team for the custom one in every view (grouping, Team filter, team shading, search, the 1/1s tab) and in CSV downloads. On a shared card, each player brings her own team: with one player claimed, the card lists the custom team and the other player's team (shown under both, blended tile, half credit); with every player claimed, it belongs only to the custom team. A real team that loses all its players drops out of the list. Custom teams are listed first.
