@@ -306,9 +306,17 @@ def test_custom_teams(browser):
     pg.press("[data-ctadd]", "Enter")
     check("claiming a player adds her chip", pg.query_selector('[data-ctrm="Trinity Rodman"]') is not None)
     check("the new team appears in the list", "Rodmans" in group_names(pg))
-    pg.fill("[data-ctadd]", "Nobody Here")
+    pg.fill("[data-ctadd]", "  Sam   Coffey ")
     pg.press("[data-ctadd]", "Enter")
-    check("a name that isn't in the set is refused", pg.inner_text("#toast").startswith("No player named"))
+    check("a name that isn't in this set is added as typed (spaces tidied)", stored_teams(pg)["teams"][0]["players"] == ["Trinity Rodman", "Sam Coffey"])
+    check("it's shown dimmed and the notice says it isn't in this set",
+          "away" in pg.get_attribute('[data-ctrm="Sam Coffey"]', "class") and "(not in this set)" in pg.inner_text("#toast"))
+    check("it doesn't change the checklist", "Rodmans" in group_names(pg) and len(group_names(pg)) == 6)
+    pg.fill("[data-ctadd]", "sam coffey")
+    pg.press("[data-ctadd]", "Enter")
+    check("the same name twice is caught (case and accents ignored)", "already on" in pg.inner_text("#toast"))
+    pg.click('[data-ctrm="Sam Coffey"]')
+    check("removing a chip drops the name", stored_teams(pg)["teams"][0]["players"] == ["Trinity Rodman"])
     pg.click("#ctnew")
     second = pg.query_selector_all(".ctteam")[1]
     second.query_selector("[data-ctadd]").fill("Trinity Rodman")
@@ -365,6 +373,11 @@ def test_custom_teams(browser):
     pg = demo_page(browser, "checklist", by="team", custom={"on": True, "teams": []})
     pg.click("#custbtn"); pg.click("#ctsharebtn"); pg.fill("#ctimport", code); pg.click("#ctdoimport")
     check("share codes keep each team's switch", [t["on"] for t in stored_teams(pg)["teams"]] == [False, True])
+    pg.close()
+
+    # A name typed in another set (lower case, no accents) claims the player here.
+    pg = demo_page(browser, "checklist", by="team", custom={"on": True, "teams": [{"id": "p", "name": "Personal Collection", "color": "#0C8599", "players": ["esther gonzalez", "Sam Coffey"]}]})
+    check("a typed name claims the matching player in this set", 2 in cards_in_group(pg, "Personal Collection"))
     pg.close()
 
     # A team from another set: players missing here are kept but dimmed.
