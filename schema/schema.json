@@ -7,16 +7,6 @@
         "kind": "data"
       },
       {
-        "id": "Line",
-        "type": "Text",
-        "kind": "data"
-      },
-      {
-        "id": "Format",
-        "type": "Text",
-        "kind": "data"
-      },
-      {
         "id": "Cards_Per_Pack",
         "type": "Int",
         "kind": "data",
