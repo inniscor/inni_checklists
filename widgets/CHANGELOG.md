@@ -11,7 +11,7 @@ All changes to the checklist widget, newest first. **Unreleased** describes what
 - A player is on one custom team at most; claiming her for another moves her (with a notice). A custom team can't take a real team's name.
 - Custom teams are saved in the browser only (`localStorage`, key `cl:customTeams`), never in the doc. Every set's widget shares them, so a team made in one checklist appears in the others with whichever of its players are in that set (the rest are shown dimmed). Other widgets on the same site pick up changes through the `storage` event.
 - **Share/import**: the teams as a `CT1:` code to copy, and a box to paste a code. Imported teams replace custom teams of the same name.
-- While custom teams change the view, the **Customize** button turns dark with a green dot and the summary line reads **Custom teams on · turn off**.
+- While custom teams change the view, the **Customize** button turns dark with a green dot.
 - Each custom team has its own on/off switch, beside the switch for the whole feature. A team that's off keeps its players but doesn't claim them; turning the feature back on restores each team's own setting. Share codes keep each team's switch.
 - The custom team's tint uses the same calculation as the Teams table's `Tint` formula (checked against the 16 NWSL club tints).
 
