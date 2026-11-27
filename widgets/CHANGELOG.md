@@ -5,7 +5,10 @@ All changes to the checklist widget, newest first. **Unreleased** describes what
 ## Unreleased
 
 ### Added
-- **Dashboard** (`dashboard.html`, beside the checklist): a summary of the set's teams and players. Tabs **Default** and **Break** (Break is shown but not available yet). A search box, a **Group by** pill (Team or Player) and a **Rank by** pill (Autos, Case hits, 1/1s live, Cards). Each row is tinted with its team's color and shows its rank, its name (players with their team), the other three numbers, and the ranked number with its share of the set (bar with an even-share tick in the middle). The row or its chart button flips it to the same stats card as the checklist; the rest of the list dims until it flips back (chart button, **Back to the list**, Escape or a click on the dimmed list). Read-only.
+- **Dashboard** (`dashboard.html`, beside the checklist): the set's teams, ranked. Tabs **Default** and **Break** (Break is shown but not available yet). A search box and a **Rank by** pill (Autos, Case hits, 1/1s live, Cards); no filters. Each team card is tinted with its color and shows its rank, its name, the other three numbers, and the ranked number with its share of the set (bar with an even-share tick in the middle).
+- Clicking a team opens its players, ranked the same way, each showing her rank across the whole set and her own share bar. Players sit under their team (or their custom team).
+- Chart buttons on teams and players flip the whole team card to the stats card (the same one as the checklist): the team's stats, or that player's, with her name on top. The rest of the list dims until it flips back (chart button, **Back to the list**, Escape or a click on the dimmed list). Read-only.
+- Search: typing a team's name shows that team; typing a player's name shows her team, open, with only the matching players. Matching players are offered in a dropdown to pin as chips: pinned players show only their teams, open, with only them, so several players can be compared. **Clear all** removes the chips.
 - The dashboard has the same **Customize** button and drawer as the checklist, so My teams can be edited from either page; both read the same saved teams, so a change in one shows in the other.
 
 ### Changed
