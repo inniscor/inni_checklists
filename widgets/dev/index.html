@@ -183,7 +183,7 @@
   .ghead .chev { font-size: 11px; color: var(--muted); transition: transform .15s; }
   .ghead[aria-expanded="true"] .chev { transform: rotate(90deg); }
   .ghead .bar { grid-column: 2 / -1; }
-  /* Stats: a chart button at the right end of each team and player group header flips that group's card over to show
+  /* Stats (Checklist tab): a chart button at the right end of each team and player group header flips that group's card over to show
      the shared stats panel (lib/stats.js) where its cards were. While a card is flipped the rest of the list is dimmed
      and inert, and the flipped group can't be collapsed; the chart button, Back to cards, Escape or a click on the
      dimmed list flips it back. The header's tint runs under the button too. */
@@ -198,7 +198,6 @@
   #list.focus .group:not(.flipped) { opacity: .35; filter: saturate(.5); pointer-events: none; }
   #list.focus .group.flipped { cursor: auto; box-shadow: 0 10px 28px rgba(20, 33, 46, .16); }
   .ghead:disabled { cursor: default; color: inherit; } .ghead:disabled .chev { visibility: hidden; }
-  .backrow { display: flex; justify-content: center; padding: 2px 12px 14px; background: var(--surface); }
   @keyframes flipOut { to { transform: perspective(1400px) rotateY(90deg); } }
   @keyframes flipIn { from { transform: perspective(1400px) rotateY(-90deg); } }
   .group.flip-out { animation: flipOut .17s ease-in forwards; }
@@ -955,7 +954,7 @@
   const headShade = (g) => { const f = S.groupBy[S.tab] === 'team' ? teamFill(g.name) : ''; return f ? `background:${f};` : ''; };
   // Team and player groups get a stats button at the right end of the header; it flips the group to its stats.
   const STATS_ICON = '<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 13.5h11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M4.5 11V8M8 11V4.5M11.5 11V6.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>';
-  const hasStats = () => window.SetStats && ['team', 'player'].includes(S.groupBy[S.tab]);
+  const hasStats = () => window.SetStats && S.tab === 'checklist' && ['team', 'player'].includes(S.groupBy[S.tab]);
   const statsable = (g) => hasStats() && !/^\((No team|No player)\)$/.test(g.name);
   function ghead(g, open, meta, bar, flipped) {
     const head = `<button class="ghead" data-gkey="${esc(g.key)}" aria-expanded="${open}" style="${headShade(g)}"${flipped ? ' disabled' : ''}><span class="chev">${ICON.chev}</span><span class="gname">${esc(g.name)}</span><span class="gmeta">${meta}</span>${bar || ''}</button>`;
@@ -965,7 +964,7 @@
   // A group's card: its header, then its cards (when open) or, flipped, its stats. body() builds the cards on demand.
   function groupSection(g, open, meta, bar, body) {
     const flipped = S.flip === g.key;
-    const inner = flipped ? statsPanel(g) + `<div class="backrow"><button class="btn ghost" data-gstats="${esc(g.key)}">Back to cards</button></div>` : open ? body() : '';
+    const inner = flipped ? statsPanel(g, `<button class="btn ghost" data-gstats="${esc(g.key)}">Back to cards</button>`) : open ? body() : '';
     return `<section class="group${flipped ? ' flipped' : ''}" data-group="${esc(g.key)}"${S.flip && !flipped ? ' inert' : ''}>${ghead(g, open, meta, bar, flipped)}${inner}</section>`;
   }
   // A flipped group that's no longer listed (filtered out, regrouped) drops the flip; the list dims only while one shows.
@@ -1002,14 +1001,14 @@
   }
   // The stats model is rebuilt only when what it counts changes: custom teams, pulls, or the product filter.
   // One product chosen in Filters → that product's parallels; otherwise every product.
-  function statsPanel(g) {
+  function statsPanel(g, footer) {
     const product = S.f.product.size === 1 ? +[...S.f.product][0] : null;
     const key = D.statsVersion + ':' + product;
     if (!D.stats || D.statsKey !== key) {
       D.stats = SetStats.model({ cards: D.cards, parsBySubset: D.parsBySubset, excByKey: D.excByKey, pulls: D.pulls, products: D.products, product });
       D.statsKey = key;
     }
-    return SetStats.panel(D.stats, S.groupBy[S.tab] === 'team' ? 'team' : 'player', g.name);
+    return SetStats.panel(D.stats, S.groupBy[S.tab] === 'team' ? 'team' : 'player', g.name, { footer });
   }
   const progress = (got, total) => `<span class="bar"><i style="width:${total ? Math.round(100 * got / total) : 0}%"></i></span>`;
 

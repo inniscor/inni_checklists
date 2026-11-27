@@ -14,7 +14,7 @@
 // Math (see the Dashboard Prototype note): numbered copies add up effective print runs (a card's exception, else the
 // parallel's run; Not_Available skipped; unnumbered versions add nothing). A card with two teams (or players) counts
 // in full in each one's counts and lists, but half in shares, ranks and per-box estimates, so shares add up to 100%.
-// Expected autos per box = Autos_Per_Box × share of auto cards, assuming each auto card is equally likely.
+// Per-box estimates are left out until the stats mature (the products' box configuration is still passed in).
 (function () {
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
   const int = (n) => Math.round(n).toLocaleString('en-US');
@@ -69,81 +69,69 @@
     return list.findIndex((x) => x.name === name) + 1;
   }
 
-  // A thin share bar with a tick at an even share (teams only); scale = the leader's share, so a full bar means "leads".
-  const meter = (x, scale, even, tip) => `<span class="ss-meter" title="${esc(tip)}"><i style="width:${scale ? Math.min(100, 100 * x / scale) : 0}%"></i>` +
-    (even != null && scale ? `<span class="ss-even" style="left:${Math.min(100, 100 * even / scale)}%"></span>` : '') + `</span>`;
+  // The panel: one row per top-line number. Left: the number and its rank. Right: its share of the set as a bar whose
+  // middle tick is an even share (1 of n teams or players), so a fill past the middle is more than an even share; the
+  // bar is full at twice an even share. Shares use half credit for shared cards; the numbers count them in full.
+  const ROWS = [
+    { key: 'autos', label: 'Autos', get: (t) => t.autos, of: "of the set's autos", unit: 'auto cards', none: 'No autos in this set' },
+    { key: 'hits', label: 'Case hits', get: (t) => t.hits, of: "of the set's case hits", unit: 'SSP cards', none: 'No case hits in this set' },
+    { key: 'live', label: '<span class="ss-nocase">1/1s</span> live', get: (t) => t.ones.live, of: 'of the live 1/1s', unit: 'still out there', none: 'No live 1/1s in this set' },
+    { key: 'cards', label: 'Cards', get: (t) => t.cards, of: 'of the checklist', unit: 'cards', none: 'No cards' },
+  ];
+  const pct1 = (x) => x === 0 ? '0%' : x < 0.001 ? '<0.1%' : (x * 100).toFixed(1) + '%';
 
-  function panel(M, kind, name) {
+  // opts.footer: HTML for the right end of the panel's footer (the page's Back to cards button).
+  function panel(M, kind, name, opts = {}) {
     const map = kind === 'team' ? M.team : M.player;
     const x = map.get(name);
     if (!x) return `<div class="ss-panel"><p class="ss-note">No cards for ${esc(name)} here.</p></div>`;
-    const T = M.total, f = x.full, fr = x.fair, n = map.size;
-    const even = kind === 'team' ? 1 / n : null;
-    const r = (m) => `#${rankOf(map, m, name)} of ${n}`;
-    const tiles = `<div class="ss-tiles">
-      <div class="ss-stat"><span>Autos</span><b>${int(f.autos)}</b><small>${T.autos ? `${pct(share(fr.autos, T.autos))} of the set · ${r('autos')}` : 'No autos in this set'}</small></div>
-      <div class="ss-stat"><span>Case hits</span><b>${int(f.hits)}</b><small>${T.hits ? `${pct(share(fr.hits, T.hits))} of the set · ${r('hits')}` : 'No case hits in this set'}</small></div>
-      <div class="ss-stat"><span>1/1s live</span><b>${int(f.ones.live)}<em> of ${int(f.ones.all)}</em></b><small>${f.ones.all ? `${int(f.ones.pulled + f.ones.off)} reported pulled` : 'No 1/1s'}</small></div>
-      <div class="ss-stat"><span>Cards</span><b>${int(f.cards)}</b><small>${pct(share(fr.cards, T.cards))} of the checklist${f.mem ? ` · ${plural(f.mem, 'relic')}` : ''}</small></div></div>`;
-
-    // Per box: within each product (or the chosen one), from this team's or player's share.
-    const lines = [];
-    for (const p of M.I.products.filter((p) => M.product == null || p.id === M.product)) {
-      const mine = tally(M.I, x.cards, x.w, p.id), all = tally(M.I, M.I.cards, null, p.id);
-      const est = [];
-      if (p.Autos_Per_Box > 0 && all.autos) est.push(['auto', p.Autos_Per_Box * share(mine.autos, all.autos)]);
-      if (p.Numbered_Per_Box > 0 && all.num.all) est.push(['numbered card', p.Numbered_Per_Box * share(mine.num.all, all.num.all)]);
-      for (const [what, perBox] of est) {
-        const perCase = p.Boxes_Per_Case > 0 ? perBox * p.Boxes_Per_Case : null;
-        const oneIn = perBox > 0 && perBox < 1 ? ` · about 1 in ${int(1 / perBox)} boxes` : '';
-        lines.push(`<div class="ss-odds"><span>${esc(p.Product)}<small>${what}s${oneIn}${perCase != null ? ` · ${perCase.toFixed(1)} per case` : ''}</small></span><b>${perBox.toFixed(2)}<small>per box</small></b></div>`);
-      }
-    }
-    const odds = lines.length ? `<div class="ss-sec"><h4>Per box <small>estimate · no published odds</small></h4>${lines.join('')}</div>` : '';
-
-    const tiers = [
-      ['Autographs', 'auto cards', (t) => t.autos, T.autos],
-      ['Numbered autos', 'copies', (t) => t.num.auto, T.num.auto],
-      ['Numbered inserts', 'copies', (t) => t.num.insert, T.num.insert],
-      ['Numbered base parallels', 'copies', (t) => t.num.base, T.num.base],
-      ['Case hits', 'cards', (t) => t.hits, T.hits],
-      ['Relics', 'cards', (t) => t.mem, T.mem],
-      ['1/1s', 'copies', (t) => t.ones.all, T.ones.all],
-    ].filter((t) => t[3] > 0).map(([label, unit, get, tot]) => {
-      const s = share(get(fr), tot);
-      const scale = Math.max(even || 0, ...[...map.values()].map((y) => share(get(y.fair), tot)));
-      return `<div class="ss-tier"><span class="ss-lab">${label}<small>${int(get(f))} of ${int(tot)} ${unit}</small></span>${meter(s, scale, even, `${pct(s)} of the set's ${label.toLowerCase()}${even ? ` · even share ${pct(even)}` : ''}`)}<span class="ss-num">${pct(s)}${even && s ? `<small>${(s / even).toFixed(1)}× even</small>` : ''}</span></div>`;
+    const T = M.total, n = map.size, even = 1 / n, who = kind === 'team' ? 'teams' : 'players';
+    const rows = ROWS.map((r) => {
+      const v = r.get(x.full), tot = r.get(T), s = share(r.get(x.fair), tot);
+      // No rank when the set has none of it (every team would tie).
+      const rank = tot ? `#${rankOf(map, r.key, name)} of ${n} ${who}` : '';
+      const pulled = x.full.ones.pulled + x.full.ones.off;
+      const left = r.key === 'live'
+        ? `<b class="ss-big">${int(v)}<em> of ${int(x.full.ones.all)}</em></b><small class="ss-rank">${[pulled ? `${int(pulled)} reported pulled` : '', rank].filter(Boolean).join(' · ')}</small>`
+        : `<b class="ss-big">${int(v)}</b><small class="ss-rank">${rank}</small>`;
+      const right = !tot ? `<small class="ss-count">${r.none}</small>` :
+        `<span class="ss-share"><b>${pct1(s)} ${r.of}</b><span class="ss-x">${s ? `${(s / even).toFixed(1)}× even` : ''}</span></span>` +
+        `<span class="ss-meter" role="img" aria-label="${pct1(s)}, an even share is ${pct1(even)}"><i style="width:${Math.min(100, 50 * s / even)}%"></i><span class="ss-even"></span></span>` +
+        `<small class="ss-count">${int(v)} of ${int(tot)} ${r.unit}</small>`;
+      return `<div class="ss-row" data-metric="${r.key}"><div class="ss-left"><span class="ss-lab">${r.label}</span>${left}</div><div class="ss-right">${right}</div></div>`;
     }).join('');
-    const shares = `<div class="ss-sec"><h4>Share of the set <small>${even ? 'tick = even share · full bar = leader' : 'full bar = leader'}</small></h4>${tiers}</div>`;
-    const scope = M.product == null ? 'Whole set, every product' : `${esc((M.I.products.find((p) => p.id === M.product) || {}).Product || 'One product')} only`;
-    return `<div class="ss-panel">${tiles}${odds}${shares}<p class="ss-note">${scope}. Filters other than Product don't change these numbers. Cards shared with another ${kind} count half in shares and estimates.</p></div>`;
+    const scope = M.product == null ? 'Whole set, every product.' : `${esc((M.I.products.find((p) => p.id === M.product) || {}).Product || 'One product')} only.`;
+    return `<div class="ss-panel"><div class="ss-head"><h4>Share of the set</h4><small>tick = an even share (1 of ${n} ${who})</small></div>${rows}
+      <div class="ss-foot"><span class="ss-note">${scope} Cards shared with another ${kind} count half in shares.</span>${opts.footer || ''}</div></div>`;
   }
 
   // Styles, added once. The variables fall back to the checklist's palette.
   const CSS = `
-  .ss-panel { padding: 10px 12px 12px; border-top: 1px solid var(--line, #D3DAE1); background: var(--surface, #fff); }
-  .ss-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
-  @media (max-width: 600px) { .ss-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-  .ss-stat { border: 1px solid var(--line, #D3DAE1); border-radius: 10px; padding: 8px 10px; }
-  .ss-stat span { display: block; font-family: var(--cond, sans-serif); font-weight: 600; font-size: 14px; color: var(--muted, #5E6B78); }
-  .ss-stat b { display: block; font-family: var(--cond, sans-serif); font-weight: 700; font-size: 26px; line-height: 1.1; font-variant-numeric: tabular-nums; }
-  .ss-stat b em { font-style: normal; font-size: 15px; font-weight: 600; color: var(--muted, #5E6B78); }
-  .ss-stat small { display: block; color: var(--muted, #5E6B78); font-size: 12.5px; line-height: 1.3; }
-  .ss-sec { margin-top: 12px; }
-  .ss-sec h4 { margin: 0 0 2px; font-family: var(--cond, sans-serif); font-weight: 700; font-size: 17px; }
-  .ss-sec h4 small { font-family: var(--body, sans-serif); font-weight: 400; font-size: 12.5px; color: var(--muted, #5E6B78); margin-left: 6px; }
-  @media (max-width: 600px) { .ss-sec h4 small { display: block; margin: 0; } }
-  .ss-odds { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 7px 0; border-top: 1px solid var(--line, #D3DAE1); }
-  .ss-odds span { font-size: 14px; font-weight: 600; } .ss-odds span small { display: block; font-weight: 400; font-size: 12.5px; color: var(--muted, #5E6B78); }
-  .ss-odds b { text-align: right; font-family: var(--cond, sans-serif); font-weight: 700; font-size: 22px; line-height: 1; } .ss-odds b small { display: block; font-family: var(--body, sans-serif); font-weight: 400; font-size: 12px; color: var(--muted, #5E6B78); }
-  .ss-tier { display: grid; grid-template-columns: minmax(120px, 32%) minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; padding: 7px 0; border-top: 1px solid var(--line, #D3DAE1); }
-  @media (max-width: 600px) { .ss-tier { grid-template-columns: minmax(0, 1fr) auto; } .ss-tier .ss-meter { grid-column: 1 / -1; grid-row: 2; } }
-  .ss-lab { font-size: 14px; } .ss-lab small { display: block; color: var(--muted, #5E6B78); font-size: 12px; }
-  .ss-num { text-align: right; font-size: 14px; font-variant-numeric: tabular-nums; white-space: nowrap; } .ss-num small { display: block; color: var(--muted, #5E6B78); font-size: 12px; }
-  .ss-meter { position: relative; display: block; height: 8px; background: var(--bg, #E9EDF1); border-radius: 4px; }
+  .ss-panel { background: var(--surface, #fff); }
+  .ss-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 10px 16px 8px; }
+  .ss-head h4 { margin: 0; font-family: var(--cond, sans-serif); font-weight: 700; font-size: 17px; }
+  .ss-head small { color: var(--muted, #5E6B78); font-size: 12.5px; text-align: right; }
+  .ss-row { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 24px; align-items: center; padding: 14px 16px; border-top: 1px solid var(--line, #D3DAE1); }
+  .ss-left { display: flex; flex-direction: column; }
+  .ss-lab { font-family: var(--cond, sans-serif); font-weight: 600; font-size: 14px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted, #5E6B78); }
+  .ss-nocase { text-transform: none; }
+  .ss-big { font-family: var(--cond, sans-serif); font-weight: 700; font-size: 34px; line-height: 1.05; font-variant-numeric: tabular-nums; }
+  .ss-big em { font-style: normal; font-size: 18px; font-weight: 600; color: var(--muted, #5E6B78); }
+  .ss-rank, .ss-count { color: var(--muted, #5E6B78); font-size: 12.5px; line-height: 1.3; }
+  .ss-share { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 14px; }
+  .ss-share b { font-weight: 600; } .ss-x { flex: none; font-size: 12.5px; color: var(--muted, #5E6B78); }
+  .ss-meter { position: relative; display: block; height: 8px; margin: 6px 0 5px; background: var(--bg, #E9EDF1); border-radius: 4px; }
   .ss-meter i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; background: var(--pitch, #0F7A55); }
-  .ss-even { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: var(--ink, #14212E); border-radius: 1px; box-shadow: 0 0 0 1px var(--surface, #fff); }
-  .ss-note { margin: 10px 0 0; color: var(--muted, #5E6B78); font-size: 12.5px; }`;
+  .ss-even { position: absolute; left: 50%; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: var(--ink, #14212E); border-radius: 1px; box-shadow: 0 0 0 1px var(--surface, #fff); }
+  .ss-foot { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 12px 16px 14px; border-top: 1px solid var(--line, #D3DAE1); }
+  .ss-note { color: var(--muted, #5E6B78); font-size: 12.5px; }
+  .ss-foot > :not(.ss-note) { flex: none; }
+  @media (max-width: 600px) {
+    .ss-head { display: block; padding: 10px 12px 8px; } .ss-head small { display: block; text-align: left; }
+    .ss-row { grid-template-columns: 96px minmax(0, 1fr); gap: 14px; padding: 12px; }
+    .ss-big { font-size: 30px; } .ss-lab { font-size: 13px; }
+    .ss-foot { flex-direction: column; text-align: center; gap: 10px; padding: 10px 12px 14px; }
+  }`;
   function injectStyles() {
     if (document.getElementById('ss-styles')) return;
     const s = document.createElement('style'); s.id = 'ss-styles'; s.textContent = CSS; document.head.appendChild(s);
