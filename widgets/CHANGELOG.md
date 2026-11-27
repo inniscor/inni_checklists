@@ -4,6 +4,10 @@ All changes to the checklist widget, newest first. **Unreleased** describes what
 
 ## Unreleased
 
+Nothing yet.
+
+## v7 — 2026-11-27
+
 ### Added
 - **Breakdown** (`breakdown.html`, beside the checklist; called Dashboard while it was built): the set's teams, ranked. Tabs **Default** and **Break** (Break is shown but not available yet). A search box and a **Rank by** pill (Autos, Case hits, 1/1s live, Cards); no filters. Each team card is tinted with its color and shows its rank, its name, the other three numbers, and the ranked number with its share of the set (bar with an even-share tick in the middle).
 - Clicking a team opens its players, ranked the same way, each showing her rank across the whole set and her own share bar. Players sit under their team (or their custom team).
@@ -37,7 +41,7 @@ All changes to the checklist widget, newest first. **Unreleased** describes what
 - The custom team's tint uses the same calculation as the Teams table's `Tint` formula (checked against the 16 NWSL club tints).
 
 ### Requires
-- Each doc that gets the Breakdown needs a page named **Breakdown** with the widget at `…/widgets/<version>/breakdown.html` (full access); its Checklist page must be named **Checklist**. To keep the view when switching sets, add each set's Breakdown page link to sets.json as `breakdown`.
+- Each doc that gets the Breakdown needs a page named **Breakdown** with the widget at `…/widgets/latest/breakdown.html` (full access); its Checklist page must be named **Checklist**. To keep the view when switching sets, add each set's Breakdown page link to sets.json as `breakdown`. Done for Prizm Black, Donruss Optic and Crown Royale (Breakdown is page 12 in each) before this release.
 
 ## v6 — 2026-11-25
 

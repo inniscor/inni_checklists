@@ -8,7 +8,8 @@
           "name": "Donruss Optic",
           "sub": "2026 Panini · NWSL",
           "doc": "sYMudGfTRcz9jFs7UwhmNx",
-          "url": "https://docs.getgrist.com/sYMudGfTRcz9/2026-Panini-Donruss-Optic-NWSL/p/10?style=singlePage"
+          "url": "https://docs.getgrist.com/sYMudGfTRcz9/2026-Panini-Donruss-Optic-NWSL/p/10?style=singlePage",
+          "breakdown": "https://docs.getgrist.com/sYMudGfTRcz9/2026-Panini-Donruss-Optic-NWSL/p/12?style=singlePage"
         },
         {
           "order": 20,
@@ -16,7 +17,8 @@
           "sub": "2026 Panini · NWSL",
           "doc": "pP9URx4nq9TWEsYANMp3Yc",
           "url": "https://docs.getgrist.com/pP9URx4nq9TW/2026-Panini-Crown-Royale-NWSL/p/10?style=singlePage",
-          "featured": true
+          "featured": true,
+          "breakdown": "https://docs.getgrist.com/pP9URx4nq9TW/2026-Panini-Crown-Royale-NWSL/p/12?style=singlePage"
         },
         {
           "order": 30,
@@ -24,7 +26,8 @@
           "sub": "2026 Panini · NWSL",
           "doc": "pCMKPajFwTiuzyVLySNiMT",
           "url": "https://docs.getgrist.com/pCMKPajFwTiu/2026-Panini-Prizm-Black-NWSL/p/10?style=singlePage",
-          "featured": true
+          "featured": true,
+          "breakdown": "https://docs.getgrist.com/pCMKPajFwTiu/2026-Panini-Prizm-Black-NWSL/p/12?style=singlePage"
         },
         {
           "order": 40,
