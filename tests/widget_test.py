@@ -113,8 +113,14 @@ def test_dashboard(browser):
     check("dashboard: clicking Break does nothing", pg.get_attribute("#tab-default", "aria-selected") == "true")
     check("dashboard: no filters and no Group by, just search and Rank by",
           pg.query_selector("#fbtn, #filters, #groupby") is None and pg.is_visible("#q") and pg.is_visible("#rankby"))
+    check("dashboard: Cards is the first Rank by option and the default",
+          pg.evaluate("() => [...document.querySelectorAll('#rankby button')].map((b) => b.textContent)") == ["Cards", "Autos", "Case hits", "1/1s live"]
+          and pg.get_attribute('#rankby [data-metric="cards"]', "aria-pressed") == "true")
+    check("dashboard: by default teams are ranked by cards (shared cards count half; ties by numbered copies, then name)",
+          [r["name"] for r in dash_rows(pg)] == ["Gotham FC", "Kansas City Current", "Angel City FC", "Washington Spirit", "Houston Dash", "Portland Thorns FC"])
+    pg.click('#rankby [data-metric="autos"]')
     rows = dash_rows(pg)
-    check("dashboard: teams ranked by autos (ties broken by numbered copies, then name)",
+    check("dashboard: Rank by Autos reorders (ties broken by numbered copies, then name)",
           [r["name"] for r in rows] == ["Kansas City Current", "Angel City FC", "Washington Spirit", "Gotham FC", "Houston Dash", "Portland Thorns FC"])
     check("dashboard: each team shows its rank and the ranked number, closed", rows[0]["rank"] == "1" and rows[0]["value"] == "1" and not any(r["open"] for r in rows))
     check("dashboard: team cards are tinted with their color", "#D5F1F1" in (pg.get_attribute('.group[data-group="Kansas City Current"] .ghwrap', "style") or "").upper())
@@ -124,12 +130,12 @@ def test_dashboard(browser):
     kc = dash_players(pg, "Kansas City Current")
     check("dashboard: clicking a team opens its players, ranked the same way", [p["name"] for p in kc] == ["Temwa Chawinga", "Croix Bethune"])
     check("dashboard: player ranks are across the whole set", kc[0]["rank"] == "1" and kc[1]["rank"] != "2")
+    sub = pg.evaluate("() => document.querySelector('.prow .who small').textContent")
+    check("dashboard: a player's subline lists cards first", sub.startswith("4 cards ·"))
+    check("dashboard: the team's subline does too", pg.evaluate("() => document.querySelector('.ghwrap .who small').textContent").startswith("4 cards ·"))
     check("dashboard: each player has a chart button", pg.query_selector('.prow .gstats[data-player="Temwa Chawinga"]') is not None)
     pg.click('.rowmain[data-toggle="Kansas City Current"]')
     check("dashboard: clicking it again closes it", dash_players(pg, "Kansas City Current") == [])
-    pg.click('#rankby [data-metric="cards"]')
-    check("dashboard: Rank by Cards reorders (shared cards count half)", dash_rows(pg)[0]["name"] == "Gotham FC")
-    pg.click('#rankby [data-metric="autos"]')
 
     dash_flip(pg, "Kansas City Current")
     check("dashboard: the team's chart button flips the card to the team's stats", metric(pg, "Kansas City Current", "autos")["share"] == "33.3% of the set's autos")
@@ -168,6 +174,7 @@ def test_dashboard(browser):
 
     team = {"on": True, "teams": [{"id": "t1", "name": "Trinity Squared", "color": "#7048E8", "players": ["Trinity Rodman", "Temwa Chawinga"]}]}
     pg = dash_page(browser, custom=team)
+    pg.click('#rankby [data-metric="autos"]')
     rows = dash_rows(pg)
     check("dashboard: custom teams apply (Trinity Squared leads on autos, Washington is gone)",
           rows[0]["name"] == "Trinity Squared" and rows[0]["value"] == "2" and "Washington Spirit" not in [r["name"] for r in rows])
