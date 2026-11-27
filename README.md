@@ -11,7 +11,7 @@ The site is published by the **Publish site** GitHub Actions workflow on every p
 | `widgets/latest/` | Live set docs (default) | Not in the repo. Generated at publish time from the version named in `widgets/LATEST`. |
 | `widgets/v1/`, `v2/`, … | Any doc that needs a fixed version | Frozen once released. Never edit a released folder. |
 
-A widget folder can hold more than `index.html`: from v7, `lib/` holds shared components (e.g. `lib/stats.js`, the team and player stats) that the folder's pages load by relative path. Releases copy the whole folder, so each version keeps the components it was tested with.
+A widget folder can hold more than `index.html`: from v7 it also has `dashboard.html` (the team and player dashboard, added to a doc as its own custom widget at `…/widgets/<folder>/dashboard.html`) and `lib/`, the shared components both pages load by relative path: `lib/stats.js` (team and player stats) and `lib/teams.js` (My teams and the Customize drawer). Releases copy the whole folder, so each version keeps the components it was tested with.
 
 Widget URL pattern: `https://inniscor.github.io/inni_checklists/widgets/<folder>/`
 
