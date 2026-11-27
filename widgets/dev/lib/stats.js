@@ -80,7 +80,7 @@
   // bar is full at twice an even share. Shares use half credit for shared cards; the numbers count them in full.
   const ROWS = [
     { key: 'autos', label: 'Autos', get: (t) => t.autos, of: "of the set's autos", unit: 'auto cards', none: 'No autos in this set' },
-    { key: 'hits', label: 'Case hits', get: (t) => t.hits, of: "of the set's case hits", unit: 'SSP cards', none: 'No case hits in this set' },
+    { key: 'hits', label: 'Case Hit/SSP', get: (t) => t.hits, of: "of the set's Case Hit/SSP cards", unit: 'cards', none: 'No Case Hit/SSP cards in this set' },
     { key: 'live', label: '<span class="ss-nocase">1/1s</span> live', get: (t) => t.ones.live, of: 'of the live 1/1s', unit: 'live', none: 'No live 1/1s in this set' },
     { key: 'cards', label: 'Cards', get: (t) => t.cards, of: 'of the checklist', unit: 'cards', none: 'No cards' },
   ];

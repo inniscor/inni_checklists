@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Breakdown</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
+<script src="lib/stats.js"></script>
+<script src="lib/teams.js"></script>
+<script src="lib/nav.js"></script>
+<style>
+  /* Same palette and type as the checklist (index.html). */
+  :root {
+    --bg: #E9EDF1; --surface: #FFFFFF; --ink: #14212E; --muted: #5E6B78; --line: #D3DAE1;
+    --pitch: #0F7A55; --pitch-soft: #E2F2EB; --slab: #1B2430; --focus: #2F6FDB;
+    --cond: "Barlow Condensed", "Arial Narrow", sans-serif; --body: "Barlow", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 var(--body); }
+  button, input { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 0 12px 48px; }
+  .ico { width: 12px; height: 12px; display: block; flex: none; }
+
+  .topbar { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  /* The header's view and set menus (and their popups) are styled by lib/nav.js. */
+
+  /* Tabs: Default, and Break (not ready yet: shown, not selectable). */
+  .tabbar { padding: 10px 0 6px; }
+  .tabs { display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 4px; }
+  .tab { flex: 1; border: 0; background: transparent; padding: 8px 6px; border-radius: 6px; font-family: var(--cond); font-weight: 600; font-size: 17px; color: var(--muted); cursor: pointer; }
+  .tab[aria-selected="true"] { background: var(--ink); color: #fff; }
+  .tab:disabled { cursor: default; opacity: .45; }
+
+  /* Search (with pinned-player chips), then the Rank by pill. */
+  .search { position: relative; }
+  .suggest { position: absolute; z-index: 6; left: 0; right: 0; top: calc(100% + 4px); margin: 0; padding: 4px; list-style: none; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; box-shadow: 0 6px 18px rgba(20, 33, 46, .12); }
+  .suggest .shead { padding: 4px 8px 2px; font-size: 12px; color: var(--muted); }
+  .suggest li[role="option"] { padding: 7px 8px; border-radius: 4px; cursor: pointer; font-size: 15px; }
+  .suggest li[role="option"] small { color: var(--muted); margin-left: 6px; }
+  .suggest li[aria-selected="true"], .suggest li[role="option"]:hover { background: var(--bg); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; background: var(--ink); color: #fff; border: 0; border-radius: 999px; padding: 4px 8px 4px 11px; font-size: 14px; cursor: pointer; }
+  .chip .ico { width: 12px; height: 12px; }
+  .link { border: 0; background: none; color: var(--focus); padding: 4px 2px; cursor: pointer; font-size: 14px; }
+  #q { width: 100%; padding: 9px 11px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); font-size: 16px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin-top: 10px; }
+  .seglabel { font-family: var(--cond); font-weight: 600; font-size: 15px; color: var(--muted); margin-right: 6px; }
+  .seg { display: inline-flex; flex-wrap: wrap; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 2px; }
+  .seg button { border: 0; background: none; border-radius: 999px; padding: 4px 12px; font-size: 14px; cursor: pointer; color: var(--muted); }
+  .seg button[aria-pressed="true"] { background: var(--ink); color: #fff; }
+  .summary { margin: 14px 2px 6px; color: var(--muted); font-size: 14px; }
+
+  /* Ranked team cards: a team-tinted header with the rank, the name and the other numbers, then the ranked number with
+     its share bar (middle tick = an even share, full at twice that), then the chart button. Clicking the header opens
+     the team's players, ranked the same way, each with its own chart button. A chart button flips the whole team card
+     to the stats panel (lib/stats.js), for the team or for that player; the rest of the list dims and can't be used
+     until it flips back. */
+  .group { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; margin-top: 10px; overflow: hidden; transition: opacity .2s, filter .2s, box-shadow .2s; }
+  .ghwrap { display: flex; align-items: stretch; }
+  .rowmain { flex: 1; min-width: 0; border: 0; background: none; text-align: left; cursor: pointer; padding: 10px 12px; display: grid; grid-template-columns: 16px 34px minmax(0, 1fr) minmax(120px, 32%); gap: 12px; align-items: center; }
+  .rowmain .chev { color: var(--muted); transition: transform .15s; } .rowmain[aria-expanded="true"] .chev { transform: rotate(90deg); }
+  .prow { display: flex; align-items: stretch; border-top: 1px solid var(--line); }
+  .pmain { flex: 1; min-width: 0; padding: 9px 12px; display: grid; grid-template-columns: 16px 34px minmax(0, 1fr) minmax(120px, 32%); gap: 12px; align-items: center; }
+  .pmain .who strong { font-family: var(--body); font-weight: 600; font-size: 15px; }
+  .prow .meter { background: var(--bg); }
+  .prow .gstats { border-left-color: var(--line); }
+  .pbanner { display: flex; align-items: baseline; gap: 8px; padding: 10px 16px 0; background: var(--surface); }
+  .pbanner span { font-family: var(--cond); font-weight: 600; font-size: 14px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+  .pbanner strong { font-family: var(--cond); font-weight: 700; font-size: 22px; }
+  .rk { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--muted); text-align: center; }
+  .who { min-width: 0; }
+  .who strong { display: block; font-family: var(--cond); font-weight: 700; font-size: 20px; line-height: 1.15; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .who small { display: block; color: var(--muted); font-size: 13px; }
+  .val { display: grid; gap: 5px; }
+  .val .num { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .val b { font-family: var(--cond); font-weight: 700; font-size: 22px; line-height: 1; font-variant-numeric: tabular-nums; }
+  .val small { color: var(--muted); font-size: 12.5px; }
+  .meter { position: relative; display: block; height: 8px; border-radius: 4px; background: rgba(255, 255, 255, .7); }
+  .meter i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; background: var(--pitch); }
+  .meter .even { position: absolute; left: 50%; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: var(--ink); border-radius: 1px; box-shadow: 0 0 0 1px var(--surface); }
+  .gstats { flex: none; width: 46px; border: 0; border-left: 1px solid rgba(20, 33, 46, .1); background: transparent; color: var(--muted); display: grid; place-items: center; cursor: pointer; }
+  .gstats .ico { width: 18px; height: 18px; }
+  .gstats:hover { color: var(--ink); background: rgba(255, 255, 255, .45); }
+  .gstats[aria-pressed="true"] { color: var(--ink); background: rgba(255, 255, 255, .6); }
+  #list.focus { cursor: pointer; }
+  #list.focus .group:not(.flipped) { opacity: .35; filter: saturate(.5); pointer-events: none; }
+  #list.focus .group.flipped { cursor: auto; box-shadow: 0 10px 28px rgba(20, 33, 46, .16); }
+  .group.flipped .rowmain { cursor: default; } .group.flipped .rowmain .chev { visibility: hidden; }
+  @keyframes flipOut { to { transform: perspective(1400px) rotateY(90deg); } }
+  @keyframes flipIn { from { transform: perspective(1400px) rotateY(-90deg); } }
+  .group.flip-out { animation: flipOut .17s ease-in forwards; }
+  .group.flip-in { animation: flipIn .22s ease-out; }
+  .btn.ghost { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 4px 12px; font-weight: 500; font-size: 14px; cursor: pointer; white-space: nowrap; }
+  .btn.ghost:hover { border-color: var(--ink); }
+  .empty { text-align: center; color: var(--muted); padding: 32px 12px; }
+  .toast { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 10px 14px; border-radius: 6px; font-size: 14px; max-width: 92vw; opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 40; }
+  .toast.show { opacity: 1; }
+  @media (max-width: 600px) {
+    .rowmain, .pmain { grid-template-columns: 12px 22px minmax(0, 1fr) 92px; gap: 8px; }
+    .who strong { font-size: 18px; white-space: normal; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <header class="sethead" id="sethead" hidden></header>
+    <button class="custbtn" id="custbtn" aria-haspopup="dialog" aria-expanded="false" aria-controls="ctdrawer"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4.5h7m3 0h1M2.5 11.5h2m3 0h6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="11" cy="4.5" r="1.6" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="6" cy="11.5" r="1.6" fill="none" stroke="currentColor" stroke-width="1.6"/></svg><span class="lab">Customize</span><span class="cdot" hidden></span></button>
+  </div>
+  <div class="tabbar">
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" id="tab-default" aria-selected="true">Default</button>
+      <button class="tab" role="tab" id="tab-break" aria-selected="false" disabled>Break</button>
+    </div>
+  </div>
+  <div class="search">
+    <input type="search" id="q" placeholder="Search teams or players" aria-label="Search teams or players" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="suggest" autocomplete="off">
+    <ul class="suggest" id="suggest" role="listbox" aria-label="Pin a player" hidden></ul>
+  </div>
+  <div class="chips" id="chips" hidden></div>
+  <div class="controls">
+    <span><span class="seglabel">Rank by</span><span class="seg" role="group" aria-label="Rank by" id="rankby"></span></span>
+  </div>
+  <div class="summary" id="summary"></div>
+  <main id="list" aria-live="polite"><div class="empty">Loading…</div></main>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(() => {
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  const int = (n) => Math.round(n).toLocaleString('en-US');
+  const pct1 = (x) => x === 0 ? '0%' : x < 0.001 ? '<0.1%' : (x * 100).toFixed(1) + '%';
+  const STATS_ICON = '<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 13.5h11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M4.5 11V8M8 11V4.5M11.5 11V6.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>';
+  // Rank by options, in order; the first is the default.
+  const METRICS = [['cards', 'Cards'], ['autos', 'Autos'], ['hits', 'Case Hit/SSP'], ['live', '1/1s live']];
+
+  // ---------- data ----------
+  // The same doc tables the checklist reads. Teams is optional (no shading without it).
+  const demo = window.DEMO_DATA || null;
+  const inGrist = !demo && window.grist && window.self !== window.top;
+  const fetchTable = (t) => demo ? Promise.resolve(demo[t]) : grist.docApi.fetchTable(t);
+  const refs = (v) => Array.isArray(v) ? (v[0] === 'L' ? v.slice(1) : v) : (typeof v === 'string' && v.startsWith('[') ? JSON.parse(v) : []);
+  const rows = (cols) => cols.id.map((id, i) => { const o = { id }; for (const k in cols) o[k] = cols[k][i]; return o; });
+  const D = {};
+  // open: teams opened by the visitor; pins: players pinned from the search; flip: { team, player } shown on a card's back.
+  const S = { metric: METRICS[0][0], q: '', open: new Set(), pins: new Set(), flip: null, sug: [], sugIdx: -1 };
+
+  async function loadAll() {
+    const [sub, prod, cards, pars, exc, pulls, plyr] = await Promise.all(
+      ['Subsets', 'Products', 'Cards', 'Parallels', 'PrintRunExceptions', 'Pulls', 'Players'].map(fetchTable));
+    D.baseTint = new Map();
+    try { for (const t of rows(await fetchTable('Teams'))) if (t.Team && t.Tint) D.baseTint.set(String(t.Team).trim(), String(t.Tint).trim()); } catch (e) {}
+    const subById = new Map(rows(sub).map((s) => [s.id, s]));
+    const playerName = new Map(rows(plyr).map((p) => [p.id, String(p.Player_Name ?? '').trim()]));
+    D.products = rows(prod);
+    D.parsBySubset = new Map();
+    for (const p of rows(pars)) { p.products = new Set(refs(p.ParallelProducts_Product)); if (!D.parsBySubset.has(p.Subset)) D.parsBySubset.set(p.Subset, []); D.parsBySubset.get(p.Subset).push(p); }
+    D.excByKey = new Map(rows(exc).map((e) => [e.Card_Key + ':' + e.Parallel_Key, e]));
+    D.pulls = new Map(rows(pulls).map((p) => [p.Card_Key + ':' + p.Parallel_Key, p]));
+    D.cards = rows(cards).map((c) => {
+      c.sub = subById.get(c.Subset) || { Subset: '' };
+      c.playerNames = refs(c.Players).map((id) => playerName.get(id)).filter(Boolean);
+      c.baseTeam = String(c.Team || '');
+      c.baseTeams = [...new Set(c.baseTeam.split(' / ').map((t) => t.trim()).filter(Boolean))];
+      return c;
+    });
+    D.players = [...new Set(D.cards.flatMap((c) => c.playerNames))].sort();
+    D.baseTeamNames = new Set(D.cards.flatMap((c) => c.baseTeams));
+    D.basePlayerTeam = new Map();
+    for (const c of D.cards) for (const n of c.playerNames) if (!D.basePlayerTeam.has(n) && c.baseTeams.length === 1) D.basePlayerTeam.set(n, c.baseTeams[0]);
+    applyTeams();
+    if (!D.mounted) {
+      D.mounted = true;
+      SetStats.injectStyles();
+      MyTeams.mount({
+        players: () => D.players,
+        baseTeamNames: () => D.baseTeamNames,
+        teamCards: (name) => D.cards.reduce((n, c) => n + (c.teams.includes(name) ? 1 : 0), 0),
+        toast,
+        changed: () => { applyTeams(); render(); },
+        renamed: (from, to) => { if (S.open.delete(from)) S.open.add(to); if (S.flip && S.flip.team === from) S.flip.team = to; },
+      });
+      bind();
+    }
+    render();
+  }
+  // Custom teams (lib/teams.js) set each card's teams; the stats model is rebuilt from them.
+  function applyTeams() {
+    Object.assign(D, MyTeams.apply({ cards: D.cards, basePlayerTeam: D.basePlayerTeam, baseTint: D.baseTint, players: D.players }));
+    D.model = SetStats.model({ cards: D.cards, parsBySubset: D.parsBySubset, excByKey: D.excByKey, pulls: D.pulls, products: D.products, product: null });
+  }
+
+  // ---------- rendering ----------
+  const CHEV = '<svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M4.5 2.5 8 6l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>', XICON = '<svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M3.6 3.6l4.8 4.8m0-4.8-4.8 4.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+  function fillOf(teams) {
+    const tints = [...new Set(teams)].map((t) => D.teamTint.get(t)).filter(Boolean);
+    if (!tints.length) return '';
+    const a = tints[0], b = tints[tints.length - 1];
+    return a === b ? a : `linear-gradient(90deg, ${a}, ${b})`;
+  }
+  // A player's team on the breakdown: her custom team if claimed, else her own team; a player seen only on shared
+  // cards goes under the first team of her first card.
+  function homeOf(name) {
+    const t = D.playerTeam.get(name); if (t) return t;
+    const x = D.model.player.get(name);
+    return x && x.cards[0] && x.cards[0].teams[0] || '';
+  }
+  const label = () => METRICS.find(([k]) => k === S.metric)[1];
+  function others(full) {
+    const parts = { autos: `${int(full.autos)} auto${Math.round(full.autos) === 1 ? '' : 's'}`, hits: `${int(full.hits)} Case Hit/SSP`,
+      live: `${int(full.ones.live)} of ${int(full.ones.all)} 1/1s live`, cards: `${int(full.cards)} card${Math.round(full.cards) === 1 ? '' : 's'}` };
+    return METRICS.filter(([k]) => k !== S.metric).map(([k]) => parts[k]).join(' · ');
+  }
+  // The ranked number and its share bar (middle tick = an even share, full at twice that).
+  function valCell(r) {
+    const v = S.metric === 'live' ? `${int(r.value)}<small> of ${int(r.full.ones.all)}</small>` : int(r.value);
+    return `<span class="val"><span class="num"><b>${v}</b><small>${pct1(r.share)}</small></span>
+      <span class="meter" role="img" aria-label="${pct1(r.share)} of the set, an even share is ${pct1(r.even)}"><i style="width:${Math.min(100, r.even ? 50 * r.share / r.even : 0)}%"></i><span class="even"></span></span></span>`;
+  }
+  const chart = (team, player, on) => `<button class="gstats" data-flip="${esc(team)}"${player ? ` data-player="${esc(player)}"` : ''} aria-pressed="${on}" aria-label="${on ? 'Back to the list' : 'Show stats'} for ${esc(player || team)}" title="${on ? 'Back to the list' : 'Stats'}">${STATS_ICON}</button>`;
+
+  function render() {
+    MyTeams.render(true);
+    $('#rankby').innerHTML = METRICS.map(([k, l]) => `<button data-metric="${k}" aria-pressed="${S.metric === k}">${l}</button>`).join('');
+    renderChips(); renderSuggest();
+    const teams = SetStats.rankRows(D.model, 'team', S.metric);
+    const players = SetStats.rankRows(D.model, 'player', S.metric);
+    const byTeam = new Map();
+    for (const p of players) { const t = homeOf(p.name); if (!byTeam.has(t)) byTeam.set(t, []); byTeam.get(t).push(p); }
+    // Pinned players: only their teams, open, with only them. Typing: teams whose name matches (as they are), plus
+    // teams with a matching player (open, with only the matching players).
+    const q = MyTeams.norm(S.q);
+    const shown = [];
+    for (const t of teams) {
+      const all = byTeam.get(t.name) || [];
+      let list = all, forced = false;
+      if (S.pins.size) { list = all.filter((p) => S.pins.has(p.name)); if (!list.length) continue; forced = true; }
+      else if (q && !MyTeams.norm(t.name).includes(q)) { list = all.filter((p) => MyTeams.norm(p.name).includes(q)); if (!list.length) continue; forced = true; }
+      shown.push({ t, list, open: forced || S.open.has(t.name), forced });
+    }
+    if (S.flip && !shown.some((x) => x.t.name === S.flip.team)) S.flip = null;
+    $('#list').classList.toggle('focus', !!S.flip);
+    $('#summary').textContent = shown.length === teams.length ? `${teams.length} teams` : `${shown.length} of ${teams.length} teams`;
+    if (!shown.length) { $('#list').innerHTML = `<div class="empty">No teams or players match “${esc(S.q.trim())}”.</div>`; return; }
+    $('#list').innerHTML = shown.map(({ t, list, open, forced }) => {
+      const f = S.flip && S.flip.team === t.name ? S.flip : null;
+      const head = `<div class="ghwrap" style="${fillOf([t.name]) ? `background:${fillOf([t.name])}` : ''}">
+          <button class="rowmain" data-toggle="${esc(t.name)}" aria-expanded="${open && !f}"${f || forced ? ' aria-disabled="true"' : ''} aria-label="${esc(t.name)}: ${label()} ${int(t.value)}, rank ${t.rank} of ${teams.length} teams">
+            <span class="chev">${CHEV}</span><span class="rk">${t.rank}</span>
+            <span class="who"><strong>${esc(t.name)}</strong><small>${esc(others(t.full))}</small></span>${valCell(t)}
+          </button>${chart(t.name, '', !!(f && !f.player))}</div>`;
+      let body = '';
+      if (f) {
+        body = (f.player ? `<div class="pbanner"><span>Player</span><strong>${esc(f.player)}</strong></div>` : '') +
+          SetStats.panel(D.model, f.player ? 'player' : 'team', f.player || t.name, { footer: `<button class="btn ghost" data-flip="${esc(t.name)}">Back to the list</button>` });
+      } else if (open) {
+        body = list.map((p) => `<div class="prow">
+            <div class="pmain"><span></span><span class="rk" title="Rank among ${players.length} players">${p.rank}</span>
+              <span class="who"><strong>${esc(p.name)}</strong><small>${esc(others(p.full))}</small></span>${valCell(p)}</div>
+            ${chart(t.name, p.name, false)}</div>`).join('') || '<div class="prow"><div class="pmain"><span></span><span></span><span class="who"><small>No players</small></span></div></div>';
+      }
+      return `<section class="group${f ? ' flipped' : ''}" data-group="${esc(t.name)}"${S.flip && !f ? ' inert' : ''}>${head}${body}</section>`;
+    }).join('');
+  }
+
+  // Pinned players show as chips under the search box; typing offers matching players to pin.
+  function renderChips() {
+    const box = $('#chips');
+    box.hidden = !S.pins.size;
+    box.innerHTML = [...S.pins].map((n) => `<button class="chip" data-unpin="${esc(n)}" aria-label="Remove ${esc(n)}">${esc(n)}${XICON}</button>`).join('') +
+      (S.pins.size > 1 ? '<button class="link" data-unpin="*">Clear all</button>' : '');
+  }
+  function renderSuggest() {
+    const box = $('#suggest'), q = $('#q'), n = MyTeams.norm(S.q);
+    S.sug = n.length >= 2 && document.activeElement === q ? D.players.filter((p) => MyTeams.norm(p).includes(n) && !S.pins.has(p)).slice(0, 8) : [];
+    if (S.sugIdx >= S.sug.length) S.sugIdx = S.sug.length - 1;
+    box.hidden = !S.sug.length;
+    q.setAttribute('aria-expanded', !!S.sug.length);
+    q.setAttribute('aria-activedescendant', S.sugIdx >= 0 ? 'sug-' + S.sugIdx : '');
+    box.innerHTML = S.sug.length ? `<li class="shead" role="presentation">Pin a player</li>` + S.sug.map((p, i) =>
+      `<li role="option" id="sug-${i}" data-pin="${esc(p)}" aria-selected="${i === S.sugIdx}">${esc(p)}${homeOf(p) ? `<small>${esc(homeOf(p))}</small>` : ''}</li>`).join('') : '';
+  }
+  function pin(name) { S.pins.add(name); S.q = ''; S.sugIdx = -1; $('#q').value = ''; S.flip = null; render(); $('#q').focus(); }
+
+  // Flip a team card (next = { team, player }) or back (null): the card turns away, the content swaps, it turns back in.
+  let flipping = false;
+  function flipTo(next) {
+    if (flipping) return;
+    const team = next ? next.team : S.flip && S.flip.team;
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const secOf = () => document.querySelector(`#list .group[data-group="${CSS.escape(team)}"]`);
+    const apply = () => {
+      S.flip = next; render();
+      const sec = secOf(); if (!sec) return null;
+      sec.querySelector('.ghwrap .gstats')?.focus({ preventScroll: true });
+      if (next) { const r = sec.getBoundingClientRect(); if (r.top < 0 || r.top > innerHeight * 0.6) sec.scrollIntoView({ block: 'start', behavior: reduce ? 'auto' : 'smooth' }); }
+      return sec;
+    };
+    const sec = secOf();
+    if (reduce || !sec) { apply(); return; }
+    flipping = true;
+    sec.classList.add('flip-out');
+    setTimeout(() => {
+      flipping = false;
+      const s2 = apply(); if (!s2) return;
+      s2.classList.add('flip-in');
+      s2.addEventListener('animationend', () => s2.classList.remove('flip-in'), { once: true });
+    }, 170);
+  }
+
+  function bind() {
+    const q = $('#q');
+    q.oninput = (e) => { S.q = e.target.value; S.sugIdx = -1; render(); };
+    q.onfocus = () => renderSuggest();
+    q.onkeydown = (e) => {
+      if (!S.sug.length) return;
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); const n = S.sug.length; S.sugIdx = e.key === 'ArrowDown' ? (S.sugIdx + 1) % n : (S.sugIdx <= 0 ? n - 1 : S.sugIdx - 1); renderSuggest(); }
+      else if (e.key === 'Enter' && S.sugIdx >= 0) { e.preventDefault(); pin(S.sug[S.sugIdx]); }
+      else if (e.key === 'Escape') { S.sug = []; $('#suggest').hidden = true; q.setAttribute('aria-expanded', 'false'); }
+    };
+    $('#suggest').onmousedown = (e) => e.preventDefault();
+    $('#suggest').onclick = (e) => { const li = e.target.closest('[data-pin]'); if (li) pin(li.dataset.pin); };
+    document.addEventListener('click', (e) => { if (!e.target.closest('.search')) { $('#suggest').hidden = true; q.setAttribute('aria-expanded', 'false'); } });
+    $('#chips').onclick = (e) => { const b = e.target.closest('[data-unpin]'); if (!b) return; if (b.dataset.unpin === '*') S.pins.clear(); else S.pins.delete(b.dataset.unpin); render(); };
+    $('#rankby').onclick = (e) => { const b = e.target.closest('[data-metric]'); if (b) { S.metric = b.dataset.metric; render(); } };
+    $('#list').addEventListener('click', (e) => {
+      const f = e.target.closest('[data-flip]');
+      if (f) {
+        const next = { team: f.dataset.flip, player: f.dataset.player || null };
+        if (S.flip) flipTo(null); else flipTo(next);
+        return;
+      }
+      // While a card shows stats, a click anywhere else on the list flips it back.
+      if (S.flip) { if (!e.target.closest('.group.flipped')) flipTo(null); return; }
+      const t = e.target.closest('[data-toggle]');
+      if (t && t.getAttribute('aria-disabled') !== 'true') { const n = t.dataset.toggle; S.open.has(n) ? S.open.delete(n) : S.open.add(n); render(); document.querySelector(`[data-toggle="${CSS.escape(n)}"]`)?.focus(); }
+    });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && S.flip && !MyTeams.isOpen()) { e.preventDefault(); flipTo(null); } });
+  }
+
+  let tt; function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('show'); clearTimeout(tt); tt = setTimeout(() => t.classList.remove('show'), 2600); }
+  const fail = (e) => { $('#list').innerHTML = `<div class="empty">Could not read the document: ${esc(e.message || e)}. Give this widget full document access in its settings.</div>`; };
+
+  // ---------- boot ----------
+  if (!window.SetStats || !window.MyTeams || !window.Nav) { $('#list').innerHTML = '<div class="empty">The breakdown’s files didn’t load. Reload the page.</div>'; return; }
+  if (demo) { loadAll().catch(fail); Nav.mount({ view: 'breakdown', demo, inGrist }); }
+  else if (inGrist) {
+    grist.ready({ requiredAccess: 'full' });
+    // Read-only. It reloads when its own table changes, e.g. a pull logged or a team color edited.
+    let booted = false;
+    grist.onRecords(() => { if (booted) loadAll().catch(fail); });
+    loadAll().then(() => { booted = true; }).catch(fail);
+    Nav.mount({ view: 'breakdown', demo, inGrist });
+  } else $('#list').innerHTML = '<div class="empty">This page is a Grist custom widget. Add it to a Grist page as a custom widget to use it.</div>';
+})();
+</script>
+</body>
+</html>

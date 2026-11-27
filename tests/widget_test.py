@@ -119,7 +119,7 @@ def test_dashboard(browser):
     check("dashboard: no filters and no Group by, just search and Rank by",
           pg.query_selector("#fbtn, #filters, #groupby") is None and pg.is_visible("#q") and pg.is_visible("#rankby"))
     check("dashboard: Cards is the first Rank by option and the default",
-          pg.evaluate("() => [...document.querySelectorAll('#rankby button')].map((b) => b.textContent)") == ["Cards", "Autos", "Case hits", "1/1s live"]
+          pg.evaluate("() => [...document.querySelectorAll('#rankby button')].map((b) => b.textContent)") == ["Cards", "Autos", "Case Hit/SSP", "1/1s live"]
           and pg.get_attribute('#rankby [data-metric="cards"]', "aria-pressed") == "true")
     check("dashboard: by default teams are ranked by cards (shared cards count half; ties by numbered copies, then name)",
           [r["name"] for r in dash_rows(pg)] == ["Gotham FC", "Kansas City Current", "Angel City FC", "Washington Spirit", "Houston Dash", "Portland Thorns FC"])
@@ -135,6 +135,7 @@ def test_dashboard(browser):
     kc = dash_players(pg, "Kansas City Current")
     check("dashboard: clicking a team opens its players, ranked the same way", [p["name"] for p in kc] == ["Temwa Chawinga", "Croix Bethune"])
     check("dashboard: player ranks are across the whole set", kc[0]["rank"] == "1" and kc[1]["rank"] != "2")
+    check("dashboard: sublines say Case Hit/SSP", "0 Case Hit/SSP" in pg.evaluate("() => document.querySelector('.ghwrap .who small').textContent"))
     sub = pg.evaluate("() => document.querySelector('.prow .who small').textContent")
     check("dashboard: a player's subline lists cards first", sub.startswith("4 cards ·"))
     check("dashboard: the team's subline does too", pg.evaluate("() => document.querySelector('.ghwrap .who small').textContent").startswith("4 cards ·"))
@@ -611,10 +612,12 @@ def test_stats(browser):
     check("the label keeps “1/1s” in lower case", pg.evaluate("() => document.querySelector('.group.flipped [data-metric=live] .ss-lab').innerText.startsWith('1/1s')"))
     check("1/1s live: live of total on the left, share of the live 1/1s on the right", li["big"] == "4 of 4" and li["share"] == "31.8% of the live 1/1s" and li["count"] == "4 of 11 live")
     hi = metric(pg, key, "hits")
-    check("a number the set doesn't have says so, without a bar or a rank", hi["big"] == "0" and hi["count"] == "No case hits in this set" and hi["fill"] is None and hi["rank"] == "")
+    check("a number the set doesn't have says so, without a bar or a rank", hi["big"] == "0" and hi["count"] == "No Case Hit/SSP cards in this set" and hi["fill"] is None and hi["rank"] == "")
+    check("the case-hit row is labeled Case Hit/SSP", pg.evaluate("() => document.querySelector('.group.flipped [data-metric=hits] .ss-lab').textContent") == "Case Hit/SSP")
     check("no legend or explanatory note on the card", "tick =" not in text and "count half" not in text and "Whole set" not in text)
     check("with no product filter the footer holds just Back to cards", pg.inner_text(f"{sec} .ss-foot").strip() == "Back to cards")
     pg.click("#fbtn")
+    check("the Type filter shows SSP as Case Hit/SSP", pg.inner_text('#filters [data-f="type"][data-v="SSP"]') == "Case Hit/SSP")
     pg.click('#filters [data-f="type"][data-v="Autograph"]')
     check("changing a filter keeps the group flipped", pg.query_selector(f'.group.flipped[data-group="{key}"] .ss-panel') is not None)
     pg.click('#filters [data-f="type"][data-v="Autograph"]')
