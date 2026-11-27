@@ -15,6 +15,7 @@ import copy
 import csv
 import json
 import os
+import shutil
 import sys
 import tempfile
 from pathlib import Path
@@ -47,7 +48,8 @@ def demo_page(browser, tab="checklist", by="subset", w=760, h=900, demo=None, se
     if custom is not None:
         js += f"localStorage.setItem('cl:customTeams',{json.dumps(json.dumps(custom))});"
     f = TMP / f"demo_{tab}_{w}.html"
-    f.write_text(WIDGET.read_text().replace(PLUGIN_TAG, f"<script>{js}</script>"))
+    # The page is written to a temp folder, so files beside the widget (lib/) are loaded from the widget folder itself.
+    f.write_text(WIDGET.read_text().replace(PLUGIN_TAG, f"<script>{js}</script>").replace('src="lib/', f'src="{(WIDGET.parent / "lib").as_uri()}/'))
     pg = browser.new_page(viewport={"width": w, "height": h}, device_scale_factor=2)
     pg.set_default_timeout(5000)
     pg.on("pageerror", lambda e: page_errors.append(str(e)))
@@ -395,6 +397,106 @@ def test_custom_teams(browser):
     pg.close()
 
 
+def stats_panel(pg, key):
+    """Flips a group (by its key, e.g. 'tGotham FC') to its stats, waits out the animation, and returns the panel's text."""
+    pg.wait_for_function("() => !document.querySelector('.flip-out, .flip-in')")
+    if pg.get_attribute(f'.gstats[data-gstats="{key}"]', "aria-pressed") != "true":
+        pg.click(f'.gstats[data-gstats="{key}"]')
+    pg.wait_for_selector(f'.group.flipped[data-group="{key}"] .ss-panel')
+    pg.wait_for_function("() => !document.querySelector('.flip-out, .flip-in')")
+    return pg.inner_text(f'.group.flipped[data-group="{key}"] .ss-panel')
+
+
+def flip_back(pg, how):
+    if how == "button":
+        pg.click(".group.flipped .gstats")
+    elif how == "back":
+        pg.click(".group.flipped .backrow button")
+    elif how == "escape":
+        pg.keyboard.press("Escape")
+    elif how == "dimmed":
+        pg.mouse.click(30, pg.evaluate("() => { const g = document.querySelector('#list .group:not(.flipped)'); const r = g.getBoundingClientRect(); return r.top + r.height / 2; }"))
+    pg.wait_for_function("() => !document.querySelector('.group.flipped') && !document.querySelector('.flip-out, .flip-in')")
+
+
+def tile(text, label):
+    """The value line and the line under it for one stat tile, from a panel's text."""
+    lines = [l.strip() for l in text.split("\n") if l.strip()]
+    i = lines.index(label)
+    return lines[i + 1], lines[i + 2]
+
+
+def test_stats(browser):
+    pg = demo_page(browser, "checklist", by="subset")
+    check("grouped by subset: no stats buttons", pg.query_selector(".gstats") is None)
+    pg.close()
+
+    d = copy.deepcopy(DEMO)
+    d["Products"].update({"Autos_Per_Box": [2], "Boxes_Per_Case": [10], "Numbered_Per_Box": [None]})
+    pg = demo_page(browser, "checklist", by="team", demo=d)
+    heads = pg.query_selector_all("#list .ghwrap")
+    check("grouped by team: every team header has a stats button at its right end",
+          len(heads) == len(group_names(pg)) and all(h.evaluate("w => w.lastElementChild.classList.contains('gstats')") for h in heads))
+    key = "tKansas City Current"
+    pg.click(f'.gstats[data-gstats="{key}"]')
+    check("the card flips: it turns away first", pg.query_selector(f'.group[data-group="{key}"].flip-out') is not None)
+    kc = stats_panel(pg, key)
+    sec = f'.group[data-group="{key}"]'
+    check("flipped: the stats replace the group's cards", pg.query_selector(f"{sec} button[data-card]") is None and pg.get_attribute(f"{sec} .gstats", "aria-pressed") == "true")
+    check("flipping opens the group underneath", pg.get_attribute(f'[data-gkey="{key}"]', "aria-expanded") == "true")
+    check("the flipped group can't be collapsed", pg.is_disabled(f'[data-gkey="{key}"]'))
+    check("the rest of the list is dimmed and can't be used",
+          pg.evaluate("() => [...document.querySelectorAll('#list .group:not(.flipped)')].every((g) => g.inert && +getComputedStyle(g).opacity < .5)"))
+    check("Autos tile: count, share of the set and rank (shared cards count half)", tile(kc, "Autos") == ("1", "33% of the set · #1 of 6"))
+    check("1/1s tile: live of total", tile(kc, "1/1s live")[0].replace(" ", " ").replace(" ", "") == "4of4")
+    check("Cards tile counts shared cards in full", tile(kc, "Cards")[0] == "4")
+    check("Per box: 2 autos × 1/3 of the auto cards = 0.67 per box, 6.7 per case", "0.67" in kc and "6.7 per case" in kc and "about 1 in 2 boxes" in kc)
+    check("Share of the set has an even-share tick for teams", "Share of the set" in kc and pg.query_selector(f"{sec} .ss-even") is not None)
+    check("the panel says what it covers", "Whole set, every product" in kc)
+    pg.click("#fbtn")
+    pg.click('#filters [data-f="type"][data-v="Autograph"]')
+    check("changing a filter keeps the group flipped", pg.query_selector(f'.group.flipped[data-group="{key}"] .ss-panel') is not None)
+    pg.click('#filters [data-f="type"][data-v="Autograph"]')
+    pg.click("#fbtn")
+    flip_back(pg, "back")
+    check("Back to cards flips it back, open, with its cards", pg.query_selector(f"{sec} button[data-card]") is not None and not pg.evaluate("() => document.querySelector('#list').classList.contains('focus')"))
+    check("…and the list is usable again", pg.evaluate("() => ![...document.querySelectorAll('#list .group')].some((g) => g.inert)"))
+    for how in ("button", "escape", "dimmed"):
+        stats_panel(pg, key)
+        flip_back(pg, how)
+        check(f"flips back with {'the chart button' if how == 'button' else 'Escape' if how == 'escape' else 'a click on the dimmed list'}", pg.query_selector(".group.flipped") is None)
+    stats_panel(pg, key)
+    pg.click('.tab[data-tab="ones"]')
+    check("switching tabs drops the flip", pg.query_selector(".group.flipped") is None and not pg.evaluate("() => document.querySelector('#list').classList.contains('focus')"))
+    pg.close()
+
+    pg = demo_page(browser, "checklist", by="player")
+    pg.emulate_media(reduced_motion="reduce")
+    pg.click('.gstats[data-gstats="pTemwa Chawinga"]')
+    check("with reduced motion the card changes without the flip", pg.query_selector(".flip-out, .flip-in") is None and pg.query_selector(".group.flipped") is not None)
+    tc = pg.inner_text(".group.flipped .ss-panel")
+    check("grouped by player: stats rank among players", "of 9" in tile(tc, "Autos")[1] and "even share" not in tc)
+    pg.close()
+
+    team = {"on": True, "teams": [{"id": "t1", "name": "Trinity Squared", "color": "#7048E8", "players": ["Trinity Rodman", "Temwa Chawinga"]}]}
+    pg = demo_page(browser, "checklist", by="team", custom=team)
+    ts = stats_panel(pg, "tTrinity Squared")
+    check("a custom team gets stats from its claimed cards", tile(ts, "Autos") == ("2", "67% of the set · #1 of 6"))
+    pg.click("#custbtn"); pg.uncheck("#cton"); pg.keyboard.press("Escape")
+    check("turning the custom team off drops its flip", pg.query_selector(".group.flipped") is None and pg.query_selector('[data-gstats="tTrinity Squared"]') is None)
+    ws = stats_panel(pg, "tWashington Spirit")
+    check("…and the real team's stats are back", tile(ws, "Autos")[0] == "1")
+    pg.close()
+
+    pg = demo_page(browser, "ones", by="team", w=390)
+    check("the 1/1s tab has stats buttons too, and they fit on a phone", pg.query_selector(".gstats") is not None and
+          pg.evaluate("() => [...document.querySelectorAll('.ghwrap')].every((w) => w.getBoundingClientRect().right <= innerWidth)"))
+    stats_panel(pg, "tGotham FC")
+    check("on a phone the tiles sit two across", pg.evaluate("() => getComputedStyle(document.querySelector('.ss-tiles')).gridTemplateColumns.split(' ').length") == 2)
+    pg.screenshot(path=str(TMP / "stats_390.png"), full_page=True)
+    pg.close()
+
+
 def open_sections(pg):
     return [b.get_attribute("data-sec") for b in pg.query_selector_all(".menu .msec, .sheet .msec") if b.get_attribute("aria-expanded") == "true"]
 
@@ -491,6 +593,8 @@ def test_in_grist_frame(browser):
     site = TMP / "site"
     (site / "widgets/w").mkdir(parents=True, exist_ok=True)
     (site / "sets.json").write_text(json.dumps(SETS))
+    if (WIDGET.parent / "lib").is_dir():
+        shutil.copytree(WIDGET.parent / "lib", site / "widgets/w/lib", dirs_exist_ok=True)
     for api_ok, doc, want in ((True, "9Abbfx43q1qkGw3t1Qm9BL", "Checklist Sandbox"),
                               (False, "9Abbfx43q1qkGw3t1Qm9BL", "Checklists"),
                               (False, "pCMKPajFwTiuzyVLySNiMT", "Prizm Black")):
@@ -516,6 +620,8 @@ def test_in_grist_frame(browser):
         head = frame.query_selector("#sethead:not([hidden])")
         title = head.inner_text().split("\n")[0].strip() if head else None
         check(f"in Grist (API {'ok' if api_ok else 'refused'}, doc {doc[:6]}…): title {title!r}", title == want)
+        if api_ok:
+            check("in Grist: the shared stats file loads from beside the widget", frame.evaluate("() => !!window.SetStats"))
         pg.close()
 
 
@@ -571,6 +677,7 @@ def main():
             ("doc without Off_Market", test_without_off_market, ()),
             ("team shading and multi-team cards", test_teams, ()),
             ("custom teams", test_custom_teams, ()),
+            ("team and player stats", test_stats, ()),
             ("set switcher", test_set_switcher, ())] + [
             (f"sticky toolbar and back to top at {w}px", test_sticky_and_back_to_top, (w,)) for w in (760, 390)] + [
             ("inside a Grist frame", test_in_grist_frame, ())]
