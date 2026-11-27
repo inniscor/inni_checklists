@@ -6,6 +6,11 @@ All changes to the checklist widget, newest first. **Unreleased** describes what
 
 Nothing yet.
 
+## v8 — 2026-11-27
+
+### Changed
+- Case hits are labeled **Case Hit/SSP** everywhere: the checklist's Type filter and chips (and the CSV's Type column), the stats card's row, and the Breakdown's **Rank by** pill and sublines.
+
 ## v7 — 2026-11-27
 
 ### Added

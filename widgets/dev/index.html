@@ -245,6 +245,8 @@
 <script>
 (() => {
   const TYPES = ['Base', 'Insert', 'SSP', 'Autograph', 'Memorabilia'];
+  // How a type reads on screen and in downloads; SSP subsets are the set's case hits.
+  const typeLabel = (t) => ({ SSP: 'Case Hit/SSP' })[t] || t;
   const GROUPINGS = [['subset', 'Subset'], ['team', 'Team'], ['player', 'Player']];
   const ICON = {
     chev: '<svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M4.5 2.5 8 6l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
@@ -432,7 +434,7 @@
   function filterGroups() {
     const g = [
       ['team', 'Team', D.teams.map((t) => [t, t])],
-      ['type', 'Type', TYPES.map((t) => [t, t])],
+      ['type', 'Type', TYPES.map((t) => [t, typeLabel(t)])],
       ['subset', 'Subset', D.subsets.map((s) => [String(s.id), s.Subset])],
       ['product', 'Product', D.products.map((p) => [String(p.id), p.Product])],
     ];
@@ -801,7 +803,7 @@
       });
     } else {
       head = ['Subset', 'Card Number', 'Card Name', 'Players', 'Team', 'Position', 'Types', 'Parallels', '1/1s'];
-      body = cur.items.map((c) => [c.sub.Subset, c.Card_Number, c.name, c.playerNames.join('; '), c.Team, c.Position || '', TYPES.filter((t) => c.sub[t]).join('; '),
+      body = cur.items.map((c) => [c.sub.Subset, c.Card_Number, c.name, c.playerNames.join('; '), c.Team, c.Position || '', TYPES.filter((t) => c.sub[t]).map(typeLabel).join('; '),
         cardParallels(c).map((x) => x.label).join('; '), c.ones.map((p) => p.Parallel).join('; ')]);
     }
     const csv = [head].concat(body).map((r) => r.map(csvCell).join(',')).join('\r\n');

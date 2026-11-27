@@ -140,7 +140,7 @@
   const pct1 = (x) => x === 0 ? '0%' : x < 0.001 ? '<0.1%' : (x * 100).toFixed(1) + '%';
   const STATS_ICON = '<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 13.5h11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M4.5 11V8M8 11V4.5M11.5 11V6.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>';
   // Rank by options, in order; the first is the default.
-  const METRICS = [['cards', 'Cards'], ['autos', 'Autos'], ['hits', 'Case hits'], ['live', '1/1s live']];
+  const METRICS = [['cards', 'Cards'], ['autos', 'Autos'], ['hits', 'Case Hit/SSP'], ['live', '1/1s live']];
 
   // ---------- data ----------
   // The same doc tables the checklist reads. Teams is optional (no shading without it).
@@ -215,7 +215,7 @@
   }
   const label = () => METRICS.find(([k]) => k === S.metric)[1];
   function others(full) {
-    const parts = { autos: `${int(full.autos)} auto${Math.round(full.autos) === 1 ? '' : 's'}`, hits: `${int(full.hits)} case hit${Math.round(full.hits) === 1 ? '' : 's'}`,
+    const parts = { autos: `${int(full.autos)} auto${Math.round(full.autos) === 1 ? '' : 's'}`, hits: `${int(full.hits)} Case Hit/SSP`,
       live: `${int(full.ones.live)} of ${int(full.ones.all)} 1/1s live`, cards: `${int(full.cards)} card${Math.round(full.cards) === 1 ? '' : 's'}` };
     return METRICS.filter(([k]) => k !== S.metric).map(([k]) => parts[k]).join(' · ');
   }
